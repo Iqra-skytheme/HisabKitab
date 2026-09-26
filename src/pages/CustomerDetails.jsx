@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import Table from "../components/Table";
 import Button from "../components/Button";
 
@@ -58,6 +59,9 @@ export default function CustomerDetails({
       `Assalam-o-Alaikum ${customer.name},\nThis is a friendly reminder from Bismillah General Store.\nYour pending khata balance is ${currency} ${netBalance.toLocaleString()}.\nPlease clear at your earliest convenience. Shukriya!`
     );
     window.open(`https://wa.me/?text=${text}`, "_blank");
+    toast.success("WhatsApp Reminder Opened", {
+      description: `Friendly payment reminder generated for ${customer.name} (${currency} ${netBalance.toLocaleString()})`,
+    });
   };
 
   const columns = [

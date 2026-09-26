@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import StatCard from "../components/StatCard";
 import Button from "../components/Button";
 import { monthlyReportData, categoryBreakdown } from "../data/dummyData";
@@ -29,6 +30,9 @@ export default function Reports({
 
   const handleExport = (type) => {
     setExportNotice(`Exporting ${type} report... (Ready)`);
+    toast.success(`${type} Statement Exported`, {
+      description: `Ledger report for ${selectedPeriod} prepared and ready.`,
+    });
     setTimeout(() => setExportNotice(""), 3500);
   };
 

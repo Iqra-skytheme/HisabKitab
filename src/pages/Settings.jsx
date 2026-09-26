@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import Button from "../components/Button";
 
 const PRESET_AVATARS = [
@@ -49,7 +50,9 @@ export default function Settings({
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        alert("Image file is too large! Please choose an image smaller than 2MB.");
+        toast.error("File Too Large", {
+          description: "Please choose an image smaller than 2MB.",
+        });
         return;
       }
       const reader = new FileReader();
@@ -58,6 +61,9 @@ export default function Settings({
         if (typeof resultUrl === "string") {
           handleChange("avatar", resultUrl);
           setSelectedAvatarPreset("");
+          toast.success("Profile photo uploaded!", {
+            description: "Click Save Settings to apply your new avatar.",
+          });
         }
       };
       reader.readAsDataURL(file);
@@ -67,17 +73,25 @@ export default function Settings({
   const handleSelectPreset = (emoji) => {
     setSelectedAvatarPreset(emoji);
     handleChange("avatar", emoji);
+    toast.info("Avatar updated", {
+      description: `Selected preset ${emoji}. Click Save Settings to apply.`,
+    });
   };
 
   const handleRemovePhoto = () => {
     handleChange("avatar", "");
     setSelectedAvatarPreset("");
+    toast.info("Profile photo cleared", {
+      description: "Default store initial will be shown.",
+    });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.owner.trim() || !formData.name.trim()) {
-      alert("Owner Name and Shop Name are required fields.");
+      toast.error("Missing Required Fields", {
+        description: "Owner Name and Shop Name are required.",
+      });
       return;
     }
 
@@ -110,6 +124,9 @@ export default function Settings({
       });
       setSelectedAvatarPreset("");
       setSaveStatus("");
+      toast.warning("Settings Reverted", {
+        description: "Restored previous profile values.",
+      });
     }
   };
 

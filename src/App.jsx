@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Toaster, toast } from "sonner";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import Customers from "./pages/Customers";
@@ -36,6 +37,9 @@ export default function App() {
     } catch (err) {
       console.error("Failed to persist shop info to localStorage", err);
     }
+    toast.success("Profile & Store Settings Saved!", {
+      description: `${updatedInfo.name} settings and profile updated successfully.`,
+    });
   };
 
   const [customers, setCustomers] = useState(initialCustomers);
@@ -90,13 +94,17 @@ export default function App() {
   // Submit New Transaction
   const handleSaveTransaction = (e) => {
     e.preventDefault();
-    if (!txnForm.customerId || !txnForm.amount || Number(txnForm.amount) <= 0) {
-      alert("Please select a customer and enter a valid positive amount.");
+    if (!txnForm.customerId) {
+      toast.error("Please select a customer for this entry.");
+      return;
+    }
+    if (!txnForm.amount || Number(txnForm.amount) <= 0) {
+      toast.error("Please enter a valid amount greater than 0.");
       return;
     }
 
     const targetCustomer = customers.find((c) => c.id === txnForm.customerId);
-    const customerName = targetCustomer ? targetCustomer.name : "Unknown";
+    const customerName = targetCustomer ? targetCustomer.name : "Customer";
     const amountNum = Number(txnForm.amount);
 
     const newTxn = {
@@ -136,6 +144,16 @@ export default function App() {
     );
 
     setTxnModalOpen(false);
+
+    if (txnForm.type === "Udhaar") {
+      toast.warning(`🔻 Udhaar Recorded: ${shopInfo.currency} ${amountNum.toLocaleString()}`, {
+        description: `Debited to ${customerName} (${newTxn.billNumber})`,
+      });
+    } else {
+      toast.success(`🔺 Jama Payment: ${shopInfo.currency} ${amountNum.toLocaleString()}`, {
+        description: `Received from ${customerName} via ${txnForm.paymentMethod}`,
+      });
+    }
   };
 
   // Open Add Customer Modal
@@ -152,8 +170,12 @@ export default function App() {
   // Submit New Customer
   const handleSaveCustomer = (e) => {
     e.preventDefault();
-    if (!custForm.name.trim() || !custForm.phone.trim()) {
-      alert("Customer name and phone number are required.");
+    if (!custForm.name.trim()) {
+      toast.error("Customer name is required.");
+      return;
+    }
+    if (!custForm.phone.trim()) {
+      toast.error("Phone number is required.");
       return;
     }
 
@@ -191,20 +213,34 @@ export default function App() {
     }
 
     setCustModalOpen(false);
+    toast.success(`👤 Customer Registered: ${newCustomer.name}`, {
+      description: `Khata account created with ${shopInfo.currency} ${openBal.toLocaleString()} initial balance.`,
+    });
   };
 
   const handleLogin = () => {
     setIsAuthenticated(true);
     setCurrentPage("dashboard");
+    toast.success("Welcome Back to HisabKitab!", {
+      description: `Signed in as ${shopInfo.owner} (${shopInfo.name})`,
+    });
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
     setCurrentPage("login");
+    toast.info("Logged Out", {
+      description: "You have signed out of your khata account.",
+    });
   };
 
   if (!isAuthenticated || currentPage === "login") {
-    return <Login onLogin={handleLogin} shopInfo={shopInfo} />;
+    return (
+      <>
+        <Toaster position="top-right" richColors closeButton />
+        <Login onLogin={handleLogin} shopInfo={shopInfo} />
+      </>
+    );
   }
 
   // Titles for Header
@@ -240,6 +276,7 @@ export default function App() {
 
   return (
     <>
+      <Toaster position="top-right" richColors closeButton />
       <DashboardLayout
         currentPage={currentPage}
         setCurrentPage={handleNavigate}

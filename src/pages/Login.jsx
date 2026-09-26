@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import Button from "../components/Button";
 
 export default function Login({ onLogin, shopInfo }) {
@@ -10,11 +11,15 @@ export default function Login({ onLogin, shopInfo }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!identifier.trim()) {
-      setError("Please enter your registered phone number or username");
+      const err = "Please enter your registered phone number or username";
+      setError(err);
+      toast.error("Phone Number Required", { description: err });
       return;
     }
     if (!pin.trim()) {
-      setError("Please enter your 4-digit security PIN");
+      const err = "Please enter your 4-digit security PIN";
+      setError(err);
+      toast.error("Security PIN Required", { description: err });
       return;
     }
     setError("");
@@ -27,6 +32,9 @@ export default function Login({ onLogin, shopInfo }) {
   };
 
   const handleQuickDemoLogin = () => {
+    toast.info("Fast Demo Login", {
+      description: "Signing into demo store account...",
+    });
     onLogin({
       identifier: "0300-1234567",
       pin: "1234",
