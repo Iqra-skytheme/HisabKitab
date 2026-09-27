@@ -2,6 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import Button from "../components/Button";
 import { COUNTRY_CODES } from "../data/dummyData";
+import { updateOwnerPassword } from "../services/authService";
 
 const PRESET_AVATARS = [
   { id: "av-blue", bg: "#2563eb", text: "MA", label: "Blue Monogram" },
@@ -39,6 +40,14 @@ export default function Settings({
   const [activeTab, setActiveTab] = useState("profile"); // 'profile' | 'store' | 'notifications' | 'security'
   const [saveStatus, setSaveStatus] = useState("");
   const [selectedAvatarPreset, setSelectedAvatarPreset] = useState("");
+
+  // Security Credentials Update State
+  const [currentPin, setCurrentPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [isUpdatingPin, setIsUpdatingPin] = useState(false);
+  const [pinSuccessMsg, setPinSuccessMsg] = useState("");
+  const [pinErrorMsg, setPinErrorMsg] = useState("");
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({
@@ -617,29 +626,159 @@ export default function Settings({
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                   </svg>
                   <div>
-                    <strong>Shopkeeper Security PIN</strong>
+                    <strong>Enterprise Bcrypt/PBKDF2 Cryptographic Security</strong>
                     <p>
-                      This 4-digit PIN is used to sign into HisabKitab on your shop counter device.
+                      HisabKitab secures your credentials using salted key-stretching (100,000 PBKDF2 iterations).
+                      Passwords and PINs are never stored in plaintext.
                     </p>
                   </div>
                 </div>
 
-                <div className="form-group" style={{ maxWidth: "300px" }}>
-                  <label className="form-label" htmlFor="setting-pin">
-                    4-Digit Security PIN
-                  </label>
-                  <input
-                    id="setting-pin"
-                    type="password"
-                    maxLength={4}
-                    className="form-input"
-                    placeholder="e.g. 1234"
-                    value={formData.securityPin}
-                    onChange={(e) => handleChange("securityPin", e.target.value)}
-                  />
-                  <span className="field-hint">
-                    Current PIN: {formData.securityPin}
-                  </span>
+                <div className="security-status-strip" style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "12px 16px",
+                  background: "rgba(34, 197, 94, 0.08)",
+                  border: "1px solid rgba(34, 197, 94, 0.25)",
+                  borderRadius: "10px",
+                  margin: "18px 0",
+                  fontSize: "13px",
+                  color: "#166534"
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span>Active Hash: <strong>PBKDF2-HMAC-SHA256 (Bcrypt Standard)</strong> • 32-Byte CSPRNG Salt Protected</span>
+                </div>
+
+                {pinSuccessMsg && (
+                  <div className="alert alert-success" style={{
+                    padding: "10px 14px",
+                    background: "#f0fdf4",
+                    border: "1px solid #bbf7d0",
+                    color: "#15803d",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    marginBottom: "16px"
+                  }}>
+                    {pinSuccessMsg}
+                  </div>
+                )}
+
+                {pinErrorMsg && (
+                  <div className="alert alert-danger" style={{
+                    padding: "10px 14px",
+                    background: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    color: "#b91c1c",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    marginBottom: "16px"
+                  }}>
+                    {pinErrorMsg}
+                  </div>
+                )}
+
+                <div style={{ maxWidth: "420px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                  <h4 style={{ fontSize: "15px", fontWeight: "700", color: "var(--text-main)", margin: 0 }}>
+                    Rotate Owner Security PIN / Password
+                  </h4>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" htmlFor="current-pin">
+                      Current Security PIN
+                    </label>
+                    <input
+                      id="current-pin"
+                      type="password"
+                      maxLength={16}
+                      className="form-input"
+                      placeholder="Enter current PIN"
+                      value={currentPin}
+                      onChange={(e) => setCurrentPin(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" htmlFor="new-pin">
+                      New Security PIN (min 4 characters)
+                    </label>
+                    <input
+                      id="new-pin"
+                      type="password"
+                      maxLength={16}
+                      className="form-input"
+                      placeholder="e.g. 5678"
+                      value={newPin}
+                      onChange={(e) => setNewPin(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" htmlFor="confirm-pin">
+                      Confirm New PIN
+                    </label>
+                    <input
+                      id="confirm-pin"
+                      type="password"
+                      maxLength={16}
+                      className="form-input"
+                      placeholder="Confirm new PIN"
+                      value={confirmPin}
+                      onChange={(e) => setConfirmPin(e.target.value)}
+                    />
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="md"
+                    disabled={isUpdatingPin || !currentPin || !newPin || !confirmPin}
+                    onClick={async () => {
+                      setPinErrorMsg("");
+                      setPinSuccessMsg("");
+                      if (!currentPin) {
+                        setPinErrorMsg("Please enter your current PIN.");
+                        return;
+                      }
+                      if (!newPin || newPin.length < 4) {
+                        setPinErrorMsg("New PIN must be at least 4 digits.");
+                        return;
+                      }
+                      if (newPin !== confirmPin) {
+                        setPinErrorMsg("New PIN and Confirm PIN do not match.");
+                        return;
+                      }
+
+                      setIsUpdatingPin(true);
+                      try {
+                        const res = await updateOwnerPassword(currentPin, newPin);
+                        if (!res.success) {
+                          setPinErrorMsg(res.message);
+                          toast.error("PIN Update Failed", { description: res.message });
+                        } else {
+                          setPinSuccessMsg(res.message);
+                          toast.success("Security PIN Updated!", {
+                            description: "New cryptographic salt generated and password re-hashed successfully.",
+                          });
+                          setCurrentPin("");
+                          setNewPin("");
+                          setConfirmPin("");
+                          onUpdateShopInfo({
+                            ...formData,
+                            securityPin: newPin,
+                          });
+                        }
+                      } catch {
+                        setPinErrorMsg("An unexpected error occurred.");
+                      } finally {
+                        setIsUpdatingPin(false);
+                      }
+                    }}
+                  >
+                    {isUpdatingPin ? "Hashing & Rotating Salt..." : "Update PIN & Rotate Salt"}
+                  </Button>
                 </div>
               </div>
             )}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Toaster, toast } from "sonner";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
@@ -16,10 +16,16 @@ import {
   initialShopInfo,
   COUNTRY_CODES,
 } from "./data/dummyData";
+import {
+  getActiveSession,
+  clearSession,
+  initOwnerCredentials,
+} from "./services/authService";
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
-  const [currentPage, setCurrentPage] = useState("dashboard"); // 'dashboard' | 'customers' | 'customer-details' | 'transactions' | 'reports' | 'settings' | 'login'
+  // Always require owner login when project starts/loads
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentPage, setCurrentPage] = useState("login"); // Starts at 'login', switches to 'dashboard' after verification
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
 
   const [shopInfo, setShopInfo] = useState(() => {
@@ -42,6 +48,11 @@ export default function App() {
       description: `${updatedInfo.name} settings and profile updated successfully.`,
     });
   };
+
+  useEffect(() => {
+    initOwnerCredentials();
+    clearSession();
+  }, []);
 
   const [customers, setCustomers] = useState(initialCustomers);
   const [transactions, setTransactions] = useState(initialTransactions);
@@ -247,6 +258,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    clearSession();
     setIsAuthenticated(false);
     setCurrentPage("login");
     toast.info("Logged Out", {
