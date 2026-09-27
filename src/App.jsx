@@ -227,7 +227,7 @@ export default function App() {
     }
 
     setCustModalOpen(false);
-    toast.success(`Customer Registered: ${newCustomer.name}`, {
+    toast.success(`Customer Added: ${newCustomer.name}`, {
       description: `Khata account created with ${shopInfo.currency} ${openBal.toLocaleString()} initial balance.`,
     });
   };
@@ -547,7 +547,7 @@ export default function App() {
       <Modal
         isOpen={custModalOpen}
         onClose={() => setCustModalOpen(false)}
-        title="Register New Customer Khata"
+        title="Add New Customer Khata"
       >
         <form onSubmit={handleSaveCustomer} className="modal-form">
           <div className="form-group">
@@ -656,7 +656,7 @@ export default function App() {
               Cancel
             </Button>
             <Button type="submit" variant="primary">
-              Register Customer
+              Save Customer Account
             </Button>
           </div>
         </form>
