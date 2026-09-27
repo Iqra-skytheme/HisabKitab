@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import Button from "../components/Button";
+import { COUNTRY_CODES } from "../data/dummyData";
 
 const PRESET_AVATARS = [
   { id: "av-blue", bg: "#2563eb", text: "MA", label: "Blue Monogram" },
@@ -21,6 +22,7 @@ export default function Settings({
     avatar: shopInfo?.avatar || "",
     bio: shopInfo?.bio || "",
     location: shopInfo?.location || "",
+    countryCode: shopInfo?.countryCode || "+92",
     phone: shopInfo?.phone || "",
     email: shopInfo?.email || "",
     category: shopInfo?.category || "General Store & Kiryana",
@@ -43,6 +45,18 @@ export default function Settings({
       ...prev,
       [field]: value,
     }));
+  };
+
+  // Strictly enforce alphabets and spaces only for owner name
+  const handleOwnerChange = (e) => {
+    const rawVal = e.target.value;
+    const alphabetsOnly = rawVal.replace(/[^a-zA-Z\s]/g, "");
+    handleChange("owner", alphabetsOnly);
+    if (rawVal !== alphabetsOnly) {
+      toast.warning("Numbers Not Allowed", {
+        description: "Owner name can only contain alphabetic letters and spaces.",
+      });
+    }
   };
 
   // Handle local image file upload
@@ -88,9 +102,17 @@ export default function Settings({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.owner.trim() || !formData.name.trim()) {
+    const cleanOwner = formData.owner.trim();
+    if (!cleanOwner || !formData.name.trim()) {
       toast.error("Missing Required Fields", {
         description: "Owner Name and Shop Name are required.",
+      });
+      return;
+    }
+
+    if (!/^[a-zA-Z\s]+$/.test(cleanOwner)) {
+      toast.error("Invalid Owner Name", {
+        description: "Owner name can only contain alphabetic letters and spaces (no numbers allowed).",
       });
       return;
     }
@@ -110,6 +132,7 @@ export default function Settings({
         avatar: shopInfo?.avatar || "",
         bio: shopInfo?.bio || "",
         location: shopInfo?.location || "",
+        countryCode: shopInfo?.countryCode || "+92",
         phone: shopInfo?.phone || "",
         email: shopInfo?.email || "",
         category: shopInfo?.category || "General Store & Kiryana",
@@ -299,7 +322,7 @@ export default function Settings({
                 <div className="form-row-2">
                   <div className="form-group">
                     <label className="form-label" htmlFor="setting-owner">
-                      Owner Full Name *
+                      Owner Full Name (Letters Only) *
                     </label>
                     <input
                       id="setting-owner"
@@ -307,23 +330,38 @@ export default function Settings({
                       className="form-input"
                       placeholder="e.g. Muhammad Ali"
                       value={formData.owner}
-                      onChange={(e) => handleChange("owner", e.target.value)}
+                      onChange={handleOwnerChange}
                       required
                     />
+                    <span className="field-hint">Numbers and digits are not permitted.</span>
                   </div>
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="setting-phone">
-                      Contact & WhatsApp Number
+                      Country Code & WhatsApp Number
                     </label>
-                    <input
-                      id="setting-phone"
-                      type="text"
-                      className="form-input"
-                      placeholder="e.g. 0300-1234567"
-                      value={formData.phone}
-                      onChange={(e) => handleChange("phone", e.target.value)}
-                    />
+                    <div className="phone-input-group">
+                      <select
+                        className="country-code-select"
+                        value={formData.countryCode || "+92"}
+                        onChange={(e) => handleChange("countryCode", e.target.value)}
+                        aria-label="Country Code"
+                      >
+                        {COUNTRY_CODES.map((item) => (
+                          <option key={item.code} value={item.code}>
+                            {item.code} ({item.country})
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        id="setting-phone"
+                        type="tel"
+                        className="form-input phone-number-input"
+                        placeholder="300-1234567"
+                        value={formData.phone}
+                        onChange={(e) => handleChange("phone", e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -688,7 +726,11 @@ export default function Settings({
                       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
                     </svg>
                   </span>
-                  <span className="p-text">{formData.phone || "No phone added"}</span>
+                  <span className="p-text">
+                    {formData.phone
+                      ? `${formData.countryCode || "+92"} ${formData.phone}`
+                      : "No phone added"}
+                  </span>
                 </div>
 
                 {formData.email && (

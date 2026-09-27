@@ -1607,29 +1607,71 @@ button, input, select, textarea {
   border-radius: var(--radius-full);
 }
 
-.insight-bullets {
+/* Reports Bottom Split & Recovery Velocity */
+.reports-analytics-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 24px;
+  width: 100%;
+  min-width: 0;
+}
+
+.category-breakdown-card {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.recovery-velocity-card {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+}
+
+.report-summary-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   margin-top: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
 }
 
-.insight-bullet {
-  display: flex;
-  gap: 12px;
-  font-size: 13px;
+.compact-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.compact-table th {
+  background-color: #f8fafc;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 700;
   color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
 }
 
-.insight-bullet strong {
-  color: var(--text-main);
-  display: block;
+.compact-table td {
+  padding: 11px 14px;
   font-size: 13px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+  white-space: nowrap;
 }
 
-.bullet-icon {
-  font-size: 20px;
-  flex-shrink: 0;
+.compact-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.compact-table tbody tr:hover {
+  background-color: #f8fafc;
 }
 
 /* ==========================================================================
@@ -1920,6 +1962,81 @@ button, input, select, textarea {
   color: var(--text-muted);
 }
 
+/* Phone Input Group with Country Code */
+.phone-input-group {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+}
+
+.country-code-select {
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  outline: none;
+  cursor: pointer;
+  min-width: 110px;
+  flex-shrink: 0;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.country-code-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.phone-number-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  display: block;
+}
+
+/* Auth Mode Tabs */
+.auth-mode-tabs {
+  display: flex;
+  background-color: var(--border-light);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.auth-tab-btn {
+  flex: 1;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.auth-tab-btn:hover {
+  color: var(--text-main);
+}
+
+.auth-tab-btn.active {
+  background-color: var(--bg-surface);
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
 /* ==========================================================================
    ANIMATIONS & RESPONSIVE
    ========================================================================== */
@@ -1940,6 +2057,11 @@ button, input, select, textarea {
   }
 
   .dashboard-content-split {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .reports-analytics-split {
     grid-template-columns: 1fr;
     gap: 20px;
   }
@@ -2091,6 +2213,11 @@ button, input, select, textarea {
     width: 100%;
     flex-wrap: wrap;
   }
+
+  .reports-analytics-split {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
 }
 
 /* Small Screen Phones (Portrait <= 480px) */
@@ -2119,6 +2246,17 @@ button, input, select, textarea {
 
   .user-profile-badge {
     padding: 2px 8px 2px 2px;
+  }
+
+  .phone-input-group {
+    display: flex;
+    gap: 6px;
+  }
+
+  .country-code-select {
+    min-width: 86px;
+    font-size: 12px;
+    padding: 8px 6px;
   }
 
   .profile-dropdown-menu {
@@ -2217,6 +2355,11 @@ button, input, select, textarea {
   }
 
   .dashboard-content-split {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .reports-analytics-split {
     grid-template-columns: 1fr;
     gap: 14px;
   }

@@ -14,6 +14,7 @@ import {
   initialCustomers,
   initialTransactions,
   initialShopInfo,
+  COUNTRY_CODES,
 } from "./data/dummyData";
 
 export default function App() {
@@ -61,6 +62,7 @@ export default function App() {
   const [custModalOpen, setCustModalOpen] = useState(false);
   const [custForm, setCustForm] = useState({
     name: "",
+    countryCode: "+92",
     phone: "",
     address: "",
     openingBalance: "",
@@ -160,6 +162,7 @@ export default function App() {
   const handleOpenAddCustomer = () => {
     setCustForm({
       name: "",
+      countryCode: shopInfo?.countryCode || "+92",
       phone: "",
       address: "",
       openingBalance: "",
@@ -170,10 +173,20 @@ export default function App() {
   // Submit New Customer
   const handleSaveCustomer = (e) => {
     e.preventDefault();
-    if (!custForm.name.trim()) {
+    const cleanName = custForm.name.trim();
+    if (!cleanName) {
       toast.error("Customer name is required.");
       return;
     }
+
+    // Strictly enforce alphabets and spaces only for customer name
+    if (!/^[a-zA-Z\s]+$/.test(cleanName)) {
+      toast.error("Invalid Customer Name", {
+        description: "Customer name must only contain alphabetic letters and spaces (no numbers allowed).",
+      });
+      return;
+    }
+
     if (!custForm.phone.trim()) {
       toast.error("Phone number is required.");
       return;
@@ -181,11 +194,12 @@ export default function App() {
 
     const newId = `c${Date.now()}`;
     const openBal = Number(custForm.openingBalance || 0);
+    const fullPhone = `${custForm.countryCode || "+92"} ${custForm.phone.trim()}`;
 
     const newCustomer = {
       id: newId,
-      name: custForm.name.trim(),
-      phone: custForm.phone.trim(),
+      name: cleanName,
+      phone: fullPhone,
       address: custForm.address.trim() || "Local Customer",
       totalUdhaar: openBal > 0 ? openBal : 0,
       totalJama: 0,
@@ -218,11 +232,17 @@ export default function App() {
     });
   };
 
-  const handleLogin = () => {
+  const handleLogin = (loginData) => {
     setIsAuthenticated(true);
     setCurrentPage("dashboard");
+    if (loginData?.shopInfo) {
+      handleUpdateShopInfo({
+        ...shopInfo,
+        ...loginData.shopInfo,
+      });
+    }
     toast.success("Welcome Back to HisabKitab!", {
-      description: `Signed in as ${shopInfo.owner} (${shopInfo.name})`,
+      description: `Signed in as ${loginData?.user?.name || shopInfo.owner} (${loginData?.shopInfo?.name || shopInfo.name})`,
     });
   };
 
@@ -532,7 +552,7 @@ export default function App() {
         <form onSubmit={handleSaveCustomer} className="modal-form">
           <div className="form-group">
             <label className="form-label" htmlFor="cust-name">
-              Full Customer Name *
+              Full Customer Name (Letters Only) *
             </label>
             <input
               id="cust-name"
@@ -540,29 +560,53 @@ export default function App() {
               className="form-input"
               placeholder="e.g. Tariq Mehmood"
               value={custForm.name}
-              onChange={(e) =>
-                setCustForm((prev) => ({ ...prev, name: e.target.value }))
-              }
+              onChange={(e) => {
+                const rawVal = e.target.value;
+                const alphabetsOnly = rawVal.replace(/[^a-zA-Z\s]/g, "");
+                setCustForm((prev) => ({ ...prev, name: alphabetsOnly }));
+                if (rawVal !== alphabetsOnly) {
+                  toast.warning("Numbers Not Allowed", {
+                    description: "Customer name can only contain alphabetic letters and spaces.",
+                  });
+                }
+              }}
               required
             />
+            <span className="field-hint">Numbers and digits are not permitted.</span>
           </div>
 
           <div className="form-row-2">
             <div className="form-group">
               <label className="form-label" htmlFor="cust-phone">
-                Phone Number *
+                Country Code & Phone Number *
               </label>
-              <input
-                id="cust-phone"
-                type="text"
-                className="form-input"
-                placeholder="e.g. 0300-1234567"
-                value={custForm.phone}
-                onChange={(e) =>
-                  setCustForm((prev) => ({ ...prev, phone: e.target.value }))
-                }
-                required
-              />
+              <div className="phone-input-group">
+                <select
+                  className="country-code-select"
+                  value={custForm.countryCode || "+92"}
+                  onChange={(e) =>
+                    setCustForm((prev) => ({ ...prev, countryCode: e.target.value }))
+                  }
+                  aria-label="Country Code"
+                >
+                  {COUNTRY_CODES.map((item) => (
+                    <option key={item.code} value={item.code}>
+                      {item.code} ({item.country})
+                    </option>
+                  ))}
+                </select>
+                <input
+                  id="cust-phone"
+                  type="tel"
+                  className="form-input phone-number-input"
+                  placeholder="300-1234567"
+                  value={custForm.phone}
+                  onChange={(e) =>
+                    setCustForm((prev) => ({ ...prev, phone: e.target.value }))
+                  }
+                  required
+                />
+              </div>
             </div>
 
             <div className="form-group">

@@ -200,10 +200,10 @@ export default function Reports({
         </div>
       </div>
 
-      {/* Category Breakdown & Monthly Performance Summary (No AI Health Insights) */}
-      <div className="dashboard-content-split">
+      {/* Category Breakdown & Monthly Performance Summary */}
+      <div className="reports-analytics-split">
         {/* Category Breakdown */}
-        <div className="dashboard-card">
+        <div className="dashboard-card category-breakdown-card">
           <h3 className="card-heading">Top Udhaar Categories</h3>
           <p className="card-subheading">Distribution of credit purchases by category</p>
 
@@ -238,12 +238,12 @@ export default function Reports({
         </div>
 
         {/* Monthly Recovery Snapshot Table */}
-        <div className="dashboard-card">
+        <div className="dashboard-card recovery-velocity-card">
           <h3 className="card-heading">Recovery Velocity</h3>
           <p className="card-subheading">Collection efficiency across recent months</p>
 
           <div className="report-summary-table-wrap">
-            <table className="custom-table compact-table">
+            <table className="compact-table">
               <thead>
                 <tr>
                   <th>Month</th>
@@ -255,11 +255,12 @@ export default function Reports({
               <tbody>
                 {monthlyReportData.slice(-4).map((row, idx) => (
                   <tr key={idx}>
-                    <td className="font-medium">{row.month}</td>
-                    <td className="text-danger">{currency} {(row.udhaar / 1000).toFixed(0)}k</td>
-                    <td className="text-success">{currency} {(row.jama / 1000).toFixed(0)}k</td>
+                    <td className="font-semibold">{row.month}</td>
+                    <td className="text-danger font-medium">{currency} {(row.udhaar / 1000).toFixed(0)}k</td>
+                    <td className="text-success font-medium">{currency} {(row.jama / 1000).toFixed(0)}k</td>
                     <td style={{ textAlign: "right" }}>
                       <span className={`badge-pill ${row.collectionRate >= 80 ? "badge-jama" : "badge-udhaar"}`}>
+                        <span className="badge-dot"></span>
                         {row.collectionRate}%
                       </span>
                     </td>

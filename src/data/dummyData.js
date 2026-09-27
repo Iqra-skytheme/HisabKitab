@@ -4,6 +4,7 @@ export const initialShopInfo = {
   avatar: "", // empty means fallback to initials or preset
   bio: "Serving our community with premium quality grocery, grains, spices, and dairy essentials since 2018.",
   location: "Shop #14, Main Market, Gulberg III, Lahore",
+  countryCode: "+92",
   phone: "0300-1234567",
   email: "bismillah.store@gmail.com",
   category: "General Store & Kiryana",
@@ -16,6 +17,29 @@ export const initialShopInfo = {
   autoBackup: true,
   securityPin: "1234",
 };
+
+export const COUNTRY_CODES = [
+  { code: "+92", country: "PK", name: "Pakistan" },
+  { code: "+1", country: "US", name: "USA / Canada" },
+  { code: "+44", country: "GB", name: "United Kingdom" },
+  { code: "+971", country: "AE", name: "UAE" },
+  { code: "+966", country: "SA", name: "Saudi Arabia" },
+  { code: "+91", country: "IN", name: "India" },
+  { code: "+880", country: "BD", name: "Bangladesh" },
+  { code: "+974", country: "QA", name: "Qatar" },
+  { code: "+968", country: "OM", name: "Oman" },
+  { code: "+965", country: "KW", name: "Kuwait" },
+  { code: "+60", country: "MY", name: "Malaysia" },
+  { code: "+65", country: "SG", name: "Singapore" },
+  { code: "+61", country: "AU", name: "Australia" },
+  { code: "+49", country: "DE", name: "Germany" },
+  { code: "+33", country: "FR", name: "France" },
+  { code: "+90", country: "TR", name: "Turkey" },
+  { code: "+86", country: "CN", name: "China" },
+  { code: "+81", country: "JP", name: "Japan" },
+  { code: "+39", country: "IT", name: "Italy" },
+  { code: "+34", country: "ES", name: "Spain" },
+];
 
 export const initialCustomers = [
   {
