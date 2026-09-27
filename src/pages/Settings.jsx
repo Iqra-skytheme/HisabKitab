@@ -38,7 +38,6 @@ export default function Settings({
   });
 
   const [activeTab, setActiveTab] = useState("profile"); // 'profile' | 'store' | 'notifications' | 'security'
-  const [saveStatus, setSaveStatus] = useState("");
   const [selectedAvatarPreset, setSelectedAvatarPreset] = useState("");
 
   // Security Credentials Update State
@@ -127,10 +126,6 @@ export default function Settings({
     }
 
     onUpdateShopInfo(formData);
-    setSaveStatus("Profile & Store Settings updated successfully!");
-    setTimeout(() => {
-      setSaveStatus("");
-    }, 4000);
   };
 
   const handleReset = () => {
@@ -155,7 +150,6 @@ export default function Settings({
         securityPin: shopInfo?.securityPin || "1234",
       });
       setSelectedAvatarPreset("");
-      setSaveStatus("");
       toast.warning("Settings Reverted", {
         description: "Restored previous profile values.",
       });
@@ -172,25 +166,6 @@ export default function Settings({
 
   return (
     <div className="page-settings">
-      {/* Settings Top Bar */}
-      <div className="settings-header-banner">
-        <div>
-          <h2 className="settings-title">Profile & Store Settings</h2>
-          <p className="settings-subtitle">
-            Manage your personal profile, business identity, location, contact, and khata rules
-          </p>
-        </div>
-
-        {saveStatus && (
-          <div className="settings-save-toast">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            <span>{saveStatus}</span>
-          </div>
-        )}
-      </div>
-
       <div className="settings-layout-grid">
         {/* Left Column: Form Settings Tabs */}
         <div className="settings-main-card">
@@ -809,100 +784,6 @@ export default function Settings({
               </Button>
             </div>
           </form>
-        </div>
-
-        {/* Right Column: Live Profile Card Preview */}
-        <div className="settings-preview-col">
-          <div className="settings-card-preview">
-            <div className="preview-badge-header">
-              <span>LIVE PROFILE PREVIEW</span>
-            </div>
-
-            <div className="preview-card-body">
-              {/* Avatar in preview */}
-              <div
-                className="preview-avatar-wrap"
-                style={isColorPreset ? { backgroundColor: formData.avatar } : {}}
-              >
-                {isImageAvatar ? (
-                  <img
-                    src={formData.avatar}
-                    alt={formData.owner}
-                    className="preview-avatar-img"
-                  />
-                ) : (
-                  <div className="preview-avatar-fallback">
-                    {formData.owner ? formData.owner.charAt(0).toUpperCase() : "M"}
-                  </div>
-                )}
-                <span className="preview-status-indicator" title="Active Shopkeeper"></span>
-              </div>
-
-              <h3 className="preview-owner-name">{formData.owner || "Owner Name"}</h3>
-              <p className="preview-shop-name">{formData.name || "Business Name"}</p>
-              <span className="preview-category-badge">{formData.category}</span>
-
-              {formData.bio && (
-                <div className="preview-bio-quote">
-                  <p>"{formData.bio}"</p>
-                </div>
-              )}
-
-              <div className="preview-details-list">
-                <div className="preview-detail-item">
-                  <span className="p-icon">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                      <circle cx="12" cy="10" r="3"></circle>
-                    </svg>
-                  </span>
-                  <span className="p-text">{formData.location || "Location not set"}</span>
-                </div>
-
-                <div className="preview-detail-item">
-                  <span className="p-icon">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                    </svg>
-                  </span>
-                  <span className="p-text">
-                    {formData.phone
-                      ? `${formData.countryCode || "+92"} ${formData.phone}`
-                      : "No phone added"}
-                  </span>
-                </div>
-
-                {formData.email && (
-                  <div className="preview-detail-item">
-                    <span className="p-icon">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                        <polyline points="22,6 12,13 2,6"></polyline>
-                      </svg>
-                    </span>
-                    <span className="p-text">{formData.email}</span>
-                  </div>
-                )}
-
-                <div className="preview-detail-item">
-                  <span className="p-icon">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="12" y1="1" x2="12" y2="23"></line>
-                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                    </svg>
-                  </span>
-                  <span className="p-text">Active Currency: <strong>{formData.currency}</strong></span>
-                </div>
-              </div>
-
-              <div className="preview-trust-strip">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                </svg>
-                <span>Verified Khata Merchant</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
