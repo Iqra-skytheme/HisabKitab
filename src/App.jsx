@@ -23,10 +23,35 @@ import {
 } from "./services/authService";
 
 export default function App() {
-  // Always require owner login when project starts/loads
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentPage, setCurrentPage] = useState("login"); // Starts at 'login', switches to 'dashboard' after verification
-  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+  // Session check on load: if authenticated, stay logged in across page reloads
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      const activeSession = getActiveSession();
+      return !!activeSession;
+    } catch {
+      return false;
+    }
+  });
+
+  // Page persistence: remember current page (e.g. Customers) across refreshes
+  const [currentPage, setCurrentPage] = useState(() => {
+    try {
+      const activeSession = getActiveSession();
+      if (!activeSession) return "login";
+      const savedPage = localStorage.getItem("hisabkitab_currentPage");
+      return savedPage && savedPage !== "login" ? savedPage : "dashboard";
+    } catch {
+      return "dashboard";
+    }
+  });
+
+  const [selectedCustomerId, setSelectedCustomerId] = useState(() => {
+    try {
+      return localStorage.getItem("hisabkitab_selectedCustomerId") || null;
+    } catch {
+      return null;
+    }
+  });
 
   const [shopInfo, setShopInfo] = useState(() => {
     try {
@@ -51,7 +76,6 @@ export default function App() {
 
   useEffect(() => {
     initOwnerCredentials();
-    clearSession();
   }, []);
 
   const [customers, setCustomers] = useState(initialCustomers);
@@ -79,11 +103,20 @@ export default function App() {
     openingBalance: "",
   });
 
-  // Navigation Helper
+  // Navigation Helper with Page Persistence
   const handleNavigate = (page, customerId = null) => {
     setCurrentPage(page);
-    if (customerId) {
-      setSelectedCustomerId(customerId);
+    try {
+      localStorage.setItem("hisabkitab_currentPage", page);
+      if (customerId) {
+        setSelectedCustomerId(customerId);
+        localStorage.setItem("hisabkitab_selectedCustomerId", customerId);
+      } else if (page !== "customer-details") {
+        setSelectedCustomerId(null);
+        localStorage.removeItem("hisabkitab_selectedCustomerId");
+      }
+    } catch (err) {
+      console.error("Failed to persist current page", err);
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -245,7 +278,18 @@ export default function App() {
 
   const handleLogin = (loginData) => {
     setIsAuthenticated(true);
-    setCurrentPage("dashboard");
+    let targetPage = "dashboard";
+    try {
+      const savedPage = localStorage.getItem("hisabkitab_currentPage");
+      if (savedPage && savedPage !== "login") {
+        targetPage = savedPage;
+      } else {
+        localStorage.setItem("hisabkitab_currentPage", "dashboard");
+      }
+    } catch {
+      targetPage = "dashboard";
+    }
+    setCurrentPage(targetPage);
     if (loginData?.shopInfo) {
       handleUpdateShopInfo({
         ...shopInfo,
@@ -253,12 +297,18 @@ export default function App() {
       });
     }
     toast.success("Welcome Back to HisabKitab!", {
-      description: `Signed in as ${loginData?.user?.name || shopInfo.owner} (${loginData?.shopInfo?.name || shopInfo.name})`,
+      description: `Signed in as ${loginData?.user?.name || shopInfo.owner}.`,
     });
   };
 
   const handleLogout = () => {
     clearSession();
+    try {
+      localStorage.removeItem("hisabkitab_currentPage");
+      localStorage.removeItem("hisabkitab_selectedCustomerId");
+    } catch (err) {
+      console.error("Failed to clear navigation persistence", err);
+    }
     setIsAuthenticated(false);
     setCurrentPage("login");
     toast.info("Logged Out", {
