@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import Button from "../components/Button";
+import Logo from "../components/Logo";
 import { COUNTRY_CODES } from "../data/dummyData";
 
 export default function Login({ onLogin, shopInfo }) {
@@ -51,24 +52,12 @@ export default function Login({ onLogin, shopInfo }) {
       <div className="login-card-container">
         {/* Brand Header */}
         <div className="login-brand-header">
-          <div className="login-logo-box">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-              <path d="M8 7h8"></path>
-              <path d="M8 11h6"></path>
-            </svg>
+          <div className="login-logo-container" style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+            <Logo size={68} variant="icon" />
           </div>
-          <h1 className="login-title">HisabKitab</h1>
+          <h1 className="login-title">
+            Hisab<span style={{ color: "#2563eb" }}>Kitab</span>
+          </h1>
           <p className="login-subtitle">
             {shopInfo?.name || "Bismillah General Store"} • Authorized Portal
           </p>

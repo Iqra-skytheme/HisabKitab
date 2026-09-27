@@ -125,22 +125,26 @@ button, input, select, textarea {
 }
 
 .sidebar-brand {
-  padding: 24px 20px;
+  padding: 22px 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.brand-logo-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+.hisabkitab-logo-root {
+  transition: transform var(--transition-fast), filter var(--transition-fast);
+}
+
+.sidebar-brand:hover .hisabkitab-logo-root {
+  transform: translateY(-1px);
+}
+
+.sidebar-brand:hover .hisabkitab-emblem-svg {
+  filter: drop-shadow(0 6px 16px rgba(56, 189, 248, 0.35));
+}
+
+.hisabkitab-emblem-svg {
+  transition: filter var(--transition-normal), transform var(--transition-fast);
 }
 
 .brand-title {
@@ -1847,16 +1851,17 @@ button, input, select, textarea {
   margin-bottom: 28px;
 }
 
-.login-logo-box {
-  width: 58px;
-  height: 58px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+.login-logo-container {
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
-  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.35);
+  filter: drop-shadow(0 10px 20px rgba(37, 99, 235, 0.3));
+  transition: transform var(--transition-normal);
+}
+
+.login-logo-container:hover {
+  transform: translateY(-2px) scale(1.03);
 }
 
 .login-title {

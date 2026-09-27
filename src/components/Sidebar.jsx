@@ -1,3 +1,5 @@
+import Logo from "./Logo";
+
 export default function Sidebar({
   currentPage,
   setCurrentPage,
@@ -79,18 +81,12 @@ export default function Sidebar({
       {isOpen && <div className="sidebar-overlay" onClick={onClose}></div>}
       <aside className={`sidebar ${isOpen ? "sidebar-open" : ""}`}>
         <div className="sidebar-brand">
-          <div className="brand-logo-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-              <path d="M8 7h8"></path>
-              <path d="M8 11h6"></path>
-            </svg>
-          </div>
-          <div className="brand-text-container">
-            <span className="brand-title">HisabKitab</span>
-            <span className="brand-tag">Digital Ledger</span>
-          </div>
+          <Logo
+            size={42}
+            showTagline={true}
+            tagline="Digital Khata"
+            onClick={() => handleNavClick("dashboard")}
+          />
         </div>
 
         {/* Clickable Shop Badge linking to Settings */}
