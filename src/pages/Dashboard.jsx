@@ -51,7 +51,8 @@ export default function Dashboard({
       key: "type",
       render: (row) => (
         <span className={`badge-pill badge-${row.type.toLowerCase()}`}>
-          {row.type === "Udhaar" ? "▼ Udhaar" : "▲ Jama"}
+          <span className="badge-dot"></span>
+          {row.type}
         </span>
       ),
     },
@@ -92,7 +93,14 @@ export default function Dashboard({
           title="Total Customers"
           value={customers.length}
           subtitle="Registered accounts"
-          icon="👥"
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          }
           variant="primary"
           trend={{ direction: "up", label: "+4 new" }}
           onClick={() => onNavigate("customers")}
@@ -102,7 +110,12 @@ export default function Dashboard({
           title="Total Udhaar (Given)"
           value={`${currency} ${totalUdhaar.toLocaleString()}`}
           subtitle="Total credit extended"
-          icon="📉"
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+              <polyline points="17 18 23 18 23 12"></polyline>
+            </svg>
+          }
           variant="danger"
           trend={{ direction: "up", label: "Credit" }}
         />
@@ -111,7 +124,12 @@ export default function Dashboard({
           title="Total Jama (Received)"
           value={`${currency} ${totalJama.toLocaleString()}`}
           subtitle="Total cash collected"
-          icon="📈"
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+              <polyline points="17 6 23 6 23 12"></polyline>
+            </svg>
+          }
           variant="success"
           trend={{ direction: "up", label: "Collected" }}
         />
@@ -120,7 +138,12 @@ export default function Dashboard({
           title="Net Receivable"
           value={`${currency} ${Math.max(0, netBalance).toLocaleString()}`}
           subtitle={netBalance >= 0 ? "Pending market recovery" : "Advance collected"}
-          icon="💰"
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+              <line x1="2" y1="10" x2="22" y2="10"></line>
+            </svg>
+          }
           variant="warning"
         />
       </section>
@@ -135,7 +158,12 @@ export default function Dashboard({
           <Button
             variant="danger"
             size="md"
-            icon="+"
+            icon={
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            }
             onClick={() => onOpenAddTransaction("Udhaar")}
           >
             Give Udhaar
@@ -143,7 +171,12 @@ export default function Dashboard({
           <Button
             variant="success"
             size="md"
-            icon="+"
+            icon={
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            }
             onClick={() => onOpenAddTransaction("Jama")}
           >
             Receive Jama
@@ -151,7 +184,14 @@ export default function Dashboard({
           <Button
             variant="outline"
             size="md"
-            icon="👤"
+            icon={
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="8.5" cy="7" r="4"></circle>
+                <line x1="20" y1="8" x2="20" y2="14"></line>
+                <line x1="23" y1="11" x2="17" y2="11"></line>
+              </svg>
+            }
             onClick={onOpenAddCustomer}
           >
             New Customer
@@ -177,12 +217,14 @@ export default function Dashboard({
             </Button>
           </div>
 
-          <Table
-            columns={columns}
-            data={recentTransactions}
-            keyField="id"
-            emptyMessage="No transactions recorded yet."
-          />
+          <div className="dashboard-table-scroll-wrap">
+            <Table
+              columns={columns}
+              data={recentTransactions}
+              keyField="id"
+              emptyMessage="No transactions recorded yet."
+            />
+          </div>
         </div>
 
         {/* Top Debtors Side Card */}
@@ -203,7 +245,12 @@ export default function Dashboard({
 
           {topDebtors.length === 0 ? (
             <div className="empty-debtors">
-              <span>🎉</span>
+              <div className="empty-check-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
               <p>All accounts are cleared!</p>
             </div>
           ) : (

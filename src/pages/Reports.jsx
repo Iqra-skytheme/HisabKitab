@@ -63,14 +63,25 @@ export default function Reports({
             size="sm"
             onClick={() => handleExport("PDF")}
           >
-            📄 Export PDF
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            <span>Export PDF</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => handleExport("Excel")}
           >
-            📊 Export CSV / Excel
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 20V10"></path>
+              <path d="M12 20V4"></path>
+              <path d="M6 20v-6"></path>
+            </svg>
+            <span>Export CSV / Excel</span>
           </Button>
         </div>
       </div>
@@ -81,7 +92,13 @@ export default function Reports({
           title="Overall Recovery Rate"
           value={`${recoveryRate}%`}
           subtitle="Jama collected vs Udhaar given"
-          icon="🎯"
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="6"></circle>
+              <circle cx="12" cy="12" r="2"></circle>
+            </svg>
+          }
           variant="success"
           trend={{ direction: "up", label: "+4% vs last month" }}
         />
@@ -90,7 +107,12 @@ export default function Reports({
           title="Total Credit Extended"
           value={`${currency} ${totalUdhaar.toLocaleString()}`}
           subtitle="All recorded Udhaar"
-          icon="💳"
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+              <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+          }
           variant="danger"
         />
 
@@ -98,7 +120,12 @@ export default function Reports({
           title="Total Cash Collected"
           value={`${currency} ${totalJama.toLocaleString()}`}
           subtitle="All recorded Jama"
-          icon="💵"
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"></line>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+          }
           variant="primary"
         />
 
@@ -106,7 +133,14 @@ export default function Reports({
           title="Active Khata Customers"
           value={customers.filter((c) => (c.balance || 0) > 0).length}
           subtitle={`Out of ${customers.length} total customers`}
-          icon="👥"
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          }
           variant="warning"
         />
       </section>
@@ -166,12 +200,12 @@ export default function Reports({
         </div>
       </div>
 
-      {/* Grid: Category Breakdown & Recovery Insights */}
+      {/* Category Breakdown & Monthly Performance Summary (No AI Health Insights) */}
       <div className="dashboard-content-split">
         {/* Category Breakdown */}
         <div className="dashboard-card">
           <h3 className="card-heading">Top Udhaar Categories</h3>
-          <p className="card-subheading">Estimated distribution of credit purchases</p>
+          <p className="card-subheading">Distribution of credit purchases by category</p>
 
           <div className="category-progress-list">
             {categoryBreakdown.map((cat, idx) => (
@@ -189,12 +223,12 @@ export default function Reports({
                       width: `${cat.percentage}%`,
                       backgroundColor:
                         idx === 0
-                          ? "#3b82f6"
+                          ? "#2563eb"
                           : idx === 1
-                          ? "#10b981"
+                          ? "#16a34a"
                           : idx === 2
-                          ? "#f59e0b"
-                          : "#8b5cf6",
+                          ? "#d97706"
+                          : "#7c3aed",
                     }}
                   ></div>
                 </div>
@@ -203,44 +237,36 @@ export default function Reports({
           </div>
         </div>
 
-        {/* Smart Tips & Recovery Guidelines */}
-        <div className="dashboard-card tips-card">
-          <h3 className="card-heading">Khata Health Insights</h3>
-          <p className="card-subheading">AI suggestions to optimize your cash flow</p>
+        {/* Monthly Recovery Snapshot Table */}
+        <div className="dashboard-card">
+          <h3 className="card-heading">Recovery Velocity</h3>
+          <p className="card-subheading">Collection efficiency across recent months</p>
 
-          <div className="insight-bullets">
-            <div className="insight-bullet">
-              <span className="bullet-icon">⚡</span>
-              <div>
-                <strong>Prompt WhatsApp Reminders:</strong>
-                <p>
-                  Sending reminders within 14 days of credit issuance increases
-                  payment recovery by up to 34%.
-                </p>
-              </div>
-            </div>
-
-            <div className="insight-bullet">
-              <span className="bullet-icon">🛡️</span>
-              <div>
-                <strong>Set Udhaar Limits:</strong>
-                <p>
-                  Consider putting a ceiling of {currency} 25,000 on retail customers
-                  to maintain liquidity for stock purchases.
-                </p>
-              </div>
-            </div>
-
-            <div className="insight-bullet">
-              <span className="bullet-icon">📱</span>
-              <div>
-                <strong>Accept Digital Payments:</strong>
-                <p>
-                  EasyPaisa and JazzCash QR codes at your counter facilitate
-                  immediate partial clearances.
-                </p>
-              </div>
-            </div>
+          <div className="report-summary-table-wrap">
+            <table className="custom-table compact-table">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Udhaar</th>
+                  <th>Jama</th>
+                  <th style={{ textAlign: "right" }}>Rec. %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthlyReportData.slice(-4).map((row, idx) => (
+                  <tr key={idx}>
+                    <td className="font-medium">{row.month}</td>
+                    <td className="text-danger">{currency} {(row.udhaar / 1000).toFixed(0)}k</td>
+                    <td className="text-success">{currency} {(row.jama / 1000).toFixed(0)}k</td>
+                    <td style={{ textAlign: "right" }}>
+                      <span className={`badge-pill ${row.collectionRate >= 80 ? "badge-jama" : "badge-udhaar"}`}>
+                        {row.collectionRate}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

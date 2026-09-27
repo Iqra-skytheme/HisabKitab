@@ -146,11 +146,11 @@ export default function App() {
     setTxnModalOpen(false);
 
     if (txnForm.type === "Udhaar") {
-      toast.warning(`🔻 Udhaar Recorded: ${shopInfo.currency} ${amountNum.toLocaleString()}`, {
+      toast.warning(`Udhaar Recorded: ${shopInfo.currency} ${amountNum.toLocaleString()}`, {
         description: `Debited to ${customerName} (${newTxn.billNumber})`,
       });
     } else {
-      toast.success(`🔺 Jama Payment: ${shopInfo.currency} ${amountNum.toLocaleString()}`, {
+      toast.success(`Jama Payment: ${shopInfo.currency} ${amountNum.toLocaleString()}`, {
         description: `Received from ${customerName} via ${txnForm.paymentMethod}`,
       });
     }
@@ -213,7 +213,7 @@ export default function App() {
     }
 
     setCustModalOpen(false);
-    toast.success(`👤 Customer Registered: ${newCustomer.name}`, {
+    toast.success(`Customer Registered: ${newCustomer.name}`, {
       description: `Khata account created with ${shopInfo.currency} ${openBal.toLocaleString()} initial balance.`,
     });
   };
@@ -349,8 +349,8 @@ export default function App() {
         onClose={() => setTxnModalOpen(false)}
         title={
           txnForm.type === "Udhaar"
-            ? "🔻 Record Udhaar (Credit Given)"
-            : "🔺 Record Jama (Payment Received)"
+            ? "Record Udhaar (Credit Given)"
+            : "Record Jama (Payment Received)"
         }
       >
         <form onSubmit={handleSaveTransaction} className="modal-form">
@@ -370,7 +370,7 @@ export default function App() {
                   }))
                 }
               >
-                ▼ Udhaar (Debit)
+                Udhaar (Debit)
               </button>
               <button
                 type="button"
@@ -385,7 +385,7 @@ export default function App() {
                   }))
                 }
               >
-                ▲ Jama (Credit)
+                Jama (Credit)
               </button>
             </div>
           </div>
@@ -527,7 +527,7 @@ export default function App() {
       <Modal
         isOpen={custModalOpen}
         onClose={() => setCustModalOpen(false)}
-        title="👤 Register New Customer Khata"
+        title="Register New Customer Khata"
       >
         <form onSubmit={handleSaveCustomer} className="modal-form">
           <div className="form-group">

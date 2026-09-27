@@ -68,7 +68,8 @@ export default function Transactions({
       key: "type",
       render: (row) => (
         <span className={`badge-pill badge-${row.type.toLowerCase()}`}>
-          {row.type === "Udhaar" ? "▼ Udhaar" : "▲ Jama"}
+          <span className="badge-dot"></span>
+          {row.type}
         </span>
       ),
     },
@@ -156,8 +157,12 @@ export default function Transactions({
               type="button"
               className="clear-search-btn"
               onClick={() => setSearchQuery("")}
+              aria-label="Clear search"
             >
-              ✕
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
             </button>
           )}
         </div>

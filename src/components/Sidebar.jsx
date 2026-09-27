@@ -106,15 +106,16 @@ export default function Sidebar({
                 alt={shopInfo.name}
                 className="sidebar-avatar-img"
               />
-            ) : shopInfo?.avatar ? (
-              <span>{shopInfo.avatar}</span>
             ) : (
-              <span>🏪</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
             )}
           </div>
           <div className="shop-details">
             <p className="shop-name">{shopInfo?.name || "Bismillah Store"}</p>
-            <p className="shop-owner">{shopInfo?.owner || "Shop Owner"} • Settings ⚙️</p>
+            <p className="shop-owner">{shopInfo?.owner || "Shop Owner"} • Settings</p>
           </div>
         </div>
 

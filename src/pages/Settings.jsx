@@ -3,12 +3,12 @@ import { toast } from "sonner";
 import Button from "../components/Button";
 
 const PRESET_AVATARS = [
-  { id: "avatar-1", emoji: "🧔🏻‍♂️", label: "Shopkeeper" },
-  { id: "avatar-2", emoji: "👨🏽‍💼", label: "Merchant" },
-  { id: "avatar-3", emoji: "🧕", label: "Store Owner" },
-  { id: "avatar-4", emoji: "🏪", label: "Mart" },
-  { id: "avatar-5", emoji: "📦", label: "Distributor" },
-  { id: "avatar-6", emoji: "🏬", label: "Super Store" },
+  { id: "av-blue", bg: "#2563eb", text: "MA", label: "Blue Monogram" },
+  { id: "av-slate", bg: "#0f172a", text: "HK", label: "Dark Monogram" },
+  { id: "av-emerald", bg: "#16a34a", text: "BS", label: "Emerald Store" },
+  { id: "av-amber", bg: "#d97706", text: "MK", label: "Amber Retail" },
+  { id: "av-indigo", bg: "#4f46e5", text: "TR", label: "Indigo Trader" },
+  { id: "av-purple", bg: "#7c3aed", text: "GS", label: "Purple Mart" },
 ];
 
 export default function Settings({
@@ -70,11 +70,11 @@ export default function Settings({
     }
   };
 
-  const handleSelectPreset = (emoji) => {
-    setSelectedAvatarPreset(emoji);
-    handleChange("avatar", emoji);
-    toast.info("Avatar updated", {
-      description: `Selected preset ${emoji}. Click Save Settings to apply.`,
+  const handleSelectPreset = (preset) => {
+    setSelectedAvatarPreset(preset.id);
+    handleChange("avatar", preset.bg); // stores background color as custom styled avatar
+    toast.info("Avatar Style Selected", {
+      description: `Selected ${preset.label}. Click Save Settings to apply.`,
     });
   };
 
@@ -82,7 +82,7 @@ export default function Settings({
     handleChange("avatar", "");
     setSelectedAvatarPreset("");
     toast.info("Profile photo cleared", {
-      description: "Default store initial will be shown.",
+      description: "Default initials badge will be shown.",
     });
   };
 
@@ -135,6 +135,9 @@ export default function Settings({
     (formData.avatar.startsWith("data:image") ||
       formData.avatar.startsWith("http"));
 
+  const isColorPreset =
+    formData.avatar && formData.avatar.startsWith("#");
+
   return (
     <div className="page-settings">
       {/* Settings Top Bar */}
@@ -148,7 +151,9 @@ export default function Settings({
 
         {saveStatus && (
           <div className="settings-save-toast">
-            <span>✅</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
             <span>{saveStatus}</span>
           </div>
         )}
@@ -164,28 +169,44 @@ export default function Settings({
               className={`settings-tab-btn ${activeTab === "profile" ? "active" : ""}`}
               onClick={() => setActiveTab("profile")}
             >
-              👤 Profile & Identity
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span>Profile & Identity</span>
             </button>
             <button
               type="button"
               className={`settings-tab-btn ${activeTab === "store" ? "active" : ""}`}
               onClick={() => setActiveTab("store")}
             >
-              🏪 Shop & Business
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+              <span>Shop & Business</span>
             </button>
             <button
               type="button"
               className={`settings-tab-btn ${activeTab === "notifications" ? "active" : ""}`}
               onClick={() => setActiveTab("notifications")}
             >
-              🔔 Khata Rules & Alerts
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span>Khata Rules & Alerts</span>
             </button>
             <button
               type="button"
               className={`settings-tab-btn ${activeTab === "security" ? "active" : ""}`}
               onClick={() => setActiveTab("security")}
             >
-              🔒 Security & PIN
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <span>Security & PIN</span>
             </button>
           </div>
 
@@ -195,15 +216,16 @@ export default function Settings({
               <div className="settings-section-content">
                 {/* Profile Picture / Avatar Editor */}
                 <div className="settings-avatar-editor">
-                  <div className="avatar-preview-box">
+                  <div
+                    className="avatar-preview-box"
+                    style={isColorPreset ? { backgroundColor: formData.avatar } : {}}
+                  >
                     {isImageAvatar ? (
                       <img
                         src={formData.avatar}
                         alt="Profile Preview"
                         className="avatar-preview-img"
                       />
-                    ) : formData.avatar ? (
-                      <span className="avatar-preview-emoji">{formData.avatar}</span>
                     ) : (
                       <div className="avatar-preview-fallback">
                         {formData.owner ? formData.owner.charAt(0).toUpperCase() : "M"}
@@ -214,12 +236,17 @@ export default function Settings({
                   <div className="avatar-upload-controls">
                     <h4 className="avatar-ctrl-title">Profile Picture</h4>
                     <p className="avatar-ctrl-desc">
-                      Upload your shop photo, brand logo, or choose a preset avatar
+                      Upload your store photograph, owner portrait, or pick a color style
                     </p>
 
                     <div className="avatar-btn-row">
                       <label className="btn btn-outline btn-sm avatar-upload-label">
-                        <span>📁 Upload Photo</span>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="17 8 12 3 7 8"></polyline>
+                          <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <span>Upload Photo</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -240,24 +267,25 @@ export default function Settings({
                       )}
                     </div>
 
-                    {/* Preset Avatars */}
+                    {/* Preset Color Themes */}
                     <div className="preset-avatars-list">
-                      <span className="preset-label">Or select preset avatar:</span>
+                      <span className="preset-label">Or choose initial palette:</span>
                       <div className="preset-chips">
                         {PRESET_AVATARS.map((preset) => (
                           <button
                             key={preset.id}
                             type="button"
-                            className={`preset-chip ${
-                              formData.avatar === preset.emoji ||
-                              selectedAvatarPreset === preset.emoji
+                            className={`preset-chip preset-color-chip ${
+                              formData.avatar === preset.bg ||
+                              selectedAvatarPreset === preset.id
                                 ? "active"
                                 : ""
                             }`}
-                            onClick={() => handleSelectPreset(preset.emoji)}
+                            style={{ backgroundColor: preset.bg, color: "#ffffff" }}
+                            onClick={() => handleSelectPreset(preset)}
                             title={preset.label}
                           >
-                            <span>{preset.emoji}</span>
+                            <span>{preset.text}</span>
                           </button>
                         ))}
                       </div>
@@ -317,7 +345,7 @@ export default function Settings({
                 <div className="form-group">
                   <div className="label-with-link">
                     <label className="form-label" htmlFor="setting-bio">
-                      Bio / About You & Your Store
+                      Store Tagline / Bio
                     </label>
                     <span className="char-count">
                       {formData.bio.length}/180 characters
@@ -328,12 +356,12 @@ export default function Settings({
                     className="form-input form-textarea"
                     rows="3"
                     maxLength={180}
-                    placeholder="Write a brief bio, motto, or store introduction..."
+                    placeholder="Write a brief description or store introduction..."
                     value={formData.bio}
                     onChange={(e) => handleChange("bio", e.target.value)}
                   ></textarea>
                   <span className="field-hint">
-                    This bio is displayed on ledger statements and your profile banner.
+                    Displayed on your customer ledger statements and profile card.
                   </span>
                 </div>
 
@@ -343,7 +371,12 @@ export default function Settings({
                     Shop Address & Location *
                   </label>
                   <div className="input-with-icon">
-                    <span className="input-icon">📍</span>
+                    <span className="input-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                      </svg>
+                    </span>
                     <input
                       id="setting-location"
                       type="text"
@@ -355,7 +388,7 @@ export default function Settings({
                     />
                   </div>
                   <span className="field-hint">
-                    Helps customers locate your physical counter and appears on print receipts.
+                    Appears on digital invoice headers and receipt summaries.
                   </span>
                 </div>
               </div>
@@ -390,15 +423,15 @@ export default function Settings({
                       value={formData.category}
                       onChange={(e) => handleChange("category", e.target.value)}
                     >
-                      <option value="General Store & Kiryana">🛒 General Store & Kiryana</option>
-                      <option value="Medical Store & Pharmacy">💊 Medical Store & Pharmacy</option>
-                      <option value="Mobile & Electronics">📱 Mobile & Electronics</option>
-                      <option value="Meat, Fish & Poultry">🥩 Meat, Fish & Poultry</option>
-                      <option value="Wholesale Grain & Pulses">🌾 Wholesale Grain & Pulses</option>
-                      <option value="Garments & Clothing">👗 Garments & Clothing</option>
-                      <option value="Hardware & Sanitary">🛠️ Hardware & Sanitary</option>
-                      <option value="Restaurant & Cafe">☕ Restaurant & Cafe</option>
-                      <option value="General Trading">🏷️ General Trading & Retail</option>
+                      <option value="General Store & Kiryana">General Store & Kiryana</option>
+                      <option value="Medical Store & Pharmacy">Medical Store & Pharmacy</option>
+                      <option value="Mobile & Electronics">Mobile & Electronics</option>
+                      <option value="Meat, Fish & Poultry">Meat, Fish & Poultry</option>
+                      <option value="Wholesale Grain & Pulses">Wholesale Grain & Pulses</option>
+                      <option value="Garments & Clothing">Garments & Clothing</option>
+                      <option value="Hardware & Sanitary">Hardware & Sanitary</option>
+                      <option value="Restaurant & Cafe">Restaurant & Cafe</option>
+                      <option value="General Trading">General Trading & Retail</option>
                     </select>
                   </div>
                 </div>
@@ -480,7 +513,7 @@ export default function Settings({
                 <div className="toggle-list">
                   <div className="toggle-row">
                     <div className="toggle-info">
-                      <h4 className="toggle-title">💬 WhatsApp Instant Receipts</h4>
+                      <h4 className="toggle-title">WhatsApp Instant Receipts</h4>
                       <p className="toggle-desc">
                         Provide quick 1-click WhatsApp transaction confirmation slips to customers.
                       </p>
@@ -499,7 +532,7 @@ export default function Settings({
 
                   <div className="toggle-row">
                     <div className="toggle-info">
-                      <h4 className="toggle-title">📱 SMS Overdue Reminders</h4>
+                      <h4 className="toggle-title">SMS Overdue Reminders</h4>
                       <p className="toggle-desc">
                         Enable alert prompts when customer balances exceed the payment cycle limit.
                       </p>
@@ -518,9 +551,9 @@ export default function Settings({
 
                   <div className="toggle-row">
                     <div className="toggle-info">
-                      <h4 className="toggle-title">☁️ Automatic Cloud Sync & Backup</h4>
+                      <h4 className="toggle-title">Automatic Cloud Sync & Backup</h4>
                       <p className="toggle-desc">
-                        Keep your store ledger synced with cloud storage for emergency device recovery.
+                        Keep your store ledger synced with cloud storage for emergency recovery.
                       </p>
                     </div>
                     <label className="switch-toggle">
@@ -542,11 +575,13 @@ export default function Settings({
             {activeTab === "security" && (
               <div className="settings-section-content">
                 <div className="security-notice-card">
-                  <span className="security-icon">🛡️</span>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  </svg>
                   <div>
                     <strong>Shopkeeper Security PIN</strong>
                     <p>
-                      This 4-digit PIN is used to sign into HisabKitab on your shop tablet or phone.
+                      This 4-digit PIN is used to sign into HisabKitab on your shop counter device.
                     </p>
                   </div>
                 </div>
@@ -585,7 +620,13 @@ export default function Settings({
                 type="submit"
                 variant="primary"
                 size="md"
-                icon="💾"
+                icon={
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                }
               >
                 Save Settings
               </Button>
@@ -602,15 +643,16 @@ export default function Settings({
 
             <div className="preview-card-body">
               {/* Avatar in preview */}
-              <div className="preview-avatar-wrap">
+              <div
+                className="preview-avatar-wrap"
+                style={isColorPreset ? { backgroundColor: formData.avatar } : {}}
+              >
                 {isImageAvatar ? (
                   <img
                     src={formData.avatar}
                     alt={formData.owner}
                     className="preview-avatar-img"
                   />
-                ) : formData.avatar ? (
-                  <span className="preview-avatar-emoji">{formData.avatar}</span>
                 ) : (
                   <div className="preview-avatar-fallback">
                     {formData.owner ? formData.owner.charAt(0).toUpperCase() : "M"}
@@ -625,38 +667,58 @@ export default function Settings({
 
               {formData.bio && (
                 <div className="preview-bio-quote">
-                  <p>“{formData.bio}”</p>
+                  <p>"{formData.bio}"</p>
                 </div>
               )}
 
               <div className="preview-details-list">
                 <div className="preview-detail-item">
-                  <span className="p-icon">📍</span>
+                  <span className="p-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                  </span>
                   <span className="p-text">{formData.location || "Location not set"}</span>
                 </div>
 
                 <div className="preview-detail-item">
-                  <span className="p-icon">📞</span>
+                  <span className="p-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                  </span>
                   <span className="p-text">{formData.phone || "No phone added"}</span>
                 </div>
 
                 {formData.email && (
                   <div className="preview-detail-item">
-                    <span className="p-icon">✉️</span>
+                    <span className="p-icon">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                      </svg>
+                    </span>
                     <span className="p-text">{formData.email}</span>
                   </div>
                 )}
 
                 <div className="preview-detail-item">
-                  <span className="p-icon">💰</span>
+                  <span className="p-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="1" x2="12" y2="23"></line>
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                  </span>
                   <span className="p-text">Active Currency: <strong>{formData.currency}</strong></span>
                 </div>
               </div>
 
               <div className="preview-trust-strip">
-                <span>🛡️ Verified Khata Merchant</span>
-                <span>•</span>
-                <span>Cloud Synced</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                <span>Verified Khata Merchant</span>
               </div>
             </div>
           </div>
