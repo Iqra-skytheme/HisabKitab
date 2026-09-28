@@ -389,27 +389,21 @@ export default function App() {
   const pageTitles = {
     dashboard: {
       title: "Khata Dashboard",
-      subtitle: `Welcome back, ${shopInfo.owner}! Overview of ${shopInfo.name}`,
     },
     customers: {
       title: "Customers Directory",
-      subtitle: "Manage all customer accounts, udhaar ledgers, and contact details",
     },
     "customer-details": {
       title: "Customer Khata Ledger",
-      subtitle: "Statement of debits, credits, and account history",
     },
     transactions: {
       title: "Transaction Ledger",
-      subtitle: "Chronological log of all Udhaar (credits) and Jama (payments)",
     },
     reports: {
       title: "Financial Analytics & Reports",
-      subtitle: "Monthly cash recovery velocity, turnover, and credit health",
     },
     settings: {
       title: "Profile & Store Settings",
-      subtitle: "Manage your personal profile, business identity, location, contact, and khata rules",
     },
   };
 

@@ -209,12 +209,8 @@ export default function Reports({
 
   return (
     <div className="page-reports">
-      {/* Top Banner & Export Bar */}
-      <div className="reports-top-bar">
-        <div>
-          <h2 className="card-heading">Financial Intelligence & Ledger Analytics</h2>
-        </div>
-
+      {/* Top Export Bar */}
+      <div className="reports-top-bar" style={{ justifyContent: "flex-end" }}>
         <div className="reports-export-group">
           {/* Target Customer Dropdown */}
           <select
