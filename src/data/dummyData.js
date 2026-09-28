@@ -1,13 +1,13 @@
 export const initialShopInfo = {
-  name: "Bismillah General Store",
+  name: "Alam Garments",
   owner: "Muhammad Ali",
   avatar: "", // empty means fallback to initials or preset
-  bio: "Serving our community with premium quality grocery, grains, spices, and dairy essentials since 2018.",
+  bio: "Serving our community with premium quality fabrics, ready-made garments, and clothing essentials since 2018.",
   location: "Shop #14, Main Market, Gulberg III, Lahore",
   countryCode: "+92",
   phone: "0300-1234567",
-  email: "bismillah.store@gmail.com",
-  category: "General Store & Kiryana",
+  email: "alam.garments@gmail.com",
+  category: "Garments & Clothing",
   currency: "Rs.",
   taxNumber: "NTN-8492019-PK",
   reminderDays: "15",
@@ -118,7 +118,7 @@ export const initialTransactions = [
     type: "Udhaar",
     amount: 5000,
     date: "2026-03-25",
-    description: "Cooking oil (5L) & Atta bag 20kg",
+    description: "3x Cotton Unstitched Suits & Lawn fabrics",
     paymentMethod: "Khata Credit",
     billNumber: "INV-1089",
   },
@@ -140,7 +140,7 @@ export const initialTransactions = [
     type: "Udhaar",
     amount: 8500,
     date: "2026-03-22",
-    description: "Wholesale tea boxes & dairy supplies",
+    description: "5x Embroidered Kurti sets wholesale",
     paymentMethod: "Khata Credit",
     billNumber: "INV-1088",
   },
@@ -162,7 +162,7 @@ export const initialTransactions = [
     type: "Udhaar",
     amount: 12000,
     date: "2026-03-19",
-    description: "Dry fruits carton & bulk pulses",
+    description: "4x Men's Wash & Wear Suits & Waistcoats",
     paymentMethod: "Khata Credit",
     billNumber: "INV-1087",
   },
@@ -211,8 +211,8 @@ export const monthlyReportData = [
 ];
 
 export const categoryBreakdown = [
-  { category: "Daily Groceries", percentage: 42, amount: 59850 },
-  { category: "Flour & Grains", percentage: 26, amount: 37050 },
-  { category: "Cooking Oil & Ghee", percentage: 18, amount: 25650 },
-  { category: "Beverages & Dairy", percentage: 14, amount: 19950 },
+  { category: "Unstitched Fabrics & Suits", percentage: 42, amount: 59850 },
+  { category: "Ready-to-Wear Shalwar Kameez", percentage: 26, amount: 37050 },
+  { category: "Formal Shirts & Trousers", percentage: 18, amount: 25650 },
+  { category: "Kids & Casual Apparel", percentage: 14, amount: 19950 },
 ];

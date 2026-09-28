@@ -1,16 +1,27 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { toast } from "sonner";
 import Table from "../components/Table";
 import Button from "../components/Button";
+import { exportTransactionReceiptPDF } from "../services/exportService";
 
 export default function Transactions({
   transactions = [],
+  customers = [],
+  shopInfo = {},
   onSelectCustomer,
   onOpenAddTransaction,
   currency = "Rs.",
+  initialTypeFilter = "all",
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all"); // 'all', 'Udhaar', 'Jama'
+  const [typeFilter, setTypeFilter] = useState(initialTypeFilter); // 'all', 'Udhaar', 'Jama'
   const [methodFilter, setMethodFilter] = useState("all");
+
+  useEffect(() => {
+    if (initialTypeFilter) {
+      setTypeFilter(initialTypeFilter);
+    }
+  }, [initialTypeFilter]);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((txn) => {
@@ -108,6 +119,49 @@ export default function Transactions({
           {Number(row.amount).toLocaleString()}
         </span>
       ),
+    },
+    {
+      header: "Receipt",
+      key: "receiptAction",
+      align: "center",
+      width: "90px",
+      render: (row) => {
+        const targetCust = customers.find((c) => c.id === row.customerId) || { name: row.customerName };
+        return (
+          <button
+            type="button"
+            className="btn-print-receipt"
+            title="Generate and print unique receipt slip"
+            onClick={(e) => {
+              e.stopPropagation();
+              exportTransactionReceiptPDF(row, targetCust, shopInfo);
+              toast.success(`Receipt Generated: ${row.billNumber || "Slip"}`, {
+                description: `Unique receipt slip ready for ${row.customerName}.`,
+              });
+            }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              padding: "4px 8px",
+              background: "#f8fafc",
+              border: "1px solid #cbd5e1",
+              borderRadius: "6px",
+              fontSize: "12px",
+              fontWeight: "600",
+              color: "#334155",
+              cursor: "pointer",
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 6 2 18 2 18 9"></polyline>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+              <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            Print
+          </button>
+        );
+      },
     },
   ];
 

@@ -1,4 +1,5 @@
 import Logo from "./Logo";
+import { getOwnerInitials } from "../utils/avatarUtils";
 
 export default function Sidebar({
   currentPage,
@@ -76,6 +77,13 @@ export default function Sidebar({
     (shopInfo.avatar.startsWith("data:image") ||
       shopInfo.avatar.startsWith("http"));
 
+  const paletteColor =
+    shopInfo?.avatar && shopInfo.avatar.startsWith("#")
+      ? shopInfo.avatar
+      : "#2563eb";
+
+  const ownerInitials = getOwnerInitials(shopInfo?.owner);
+
   return (
     <>
       {isOpen && <div className="sidebar-overlay" onClick={onClose}></div>}
@@ -95,7 +103,10 @@ export default function Sidebar({
           onClick={() => handleNavClick("settings")}
           title="Click to manage store profile & settings"
         >
-          <div className="shop-avatar">
+          <div
+            className="shop-avatar"
+            style={!isImageAvatar ? { backgroundColor: paletteColor, color: "#ffffff" } : {}}
+          >
             {isImageAvatar ? (
               <img
                 src={shopInfo.avatar}
@@ -103,10 +114,9 @@ export default function Sidebar({
                 className="sidebar-avatar-img"
               />
             ) : (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-              </svg>
+              <span className="sidebar-initials-badge">
+                {ownerInitials}
+              </span>
             )}
           </div>
           <div className="shop-details">

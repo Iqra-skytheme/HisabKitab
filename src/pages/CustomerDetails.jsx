@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import Table from "../components/Table";
 import Button from "../components/Button";
+import { exportCustomerPDF, exportCustomerExcel, exportTransactionReceiptPDF } from "../services/exportService";
 
 function computeCustomerStatement(txns) {
   const sorted = [...txns].sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -24,6 +25,7 @@ export default function CustomerDetails({
   onBack,
   onOpenAddTransaction,
   currency = "Rs.",
+  shopInfo = {},
 }) {
   if (!customer) {
     return (
@@ -117,6 +119,45 @@ export default function CustomerDetails({
         </span>
       ),
     },
+    {
+      header: "Receipt",
+      key: "receiptAction",
+      align: "center",
+      width: "85px",
+      render: (row) => (
+        <button
+          type="button"
+          className="btn-print-receipt"
+          title="Print unique transaction receipt slip"
+          onClick={() => {
+            exportTransactionReceiptPDF(row, customer, shopInfo);
+            toast.success(`Receipt Generated: ${row.billNumber || "Slip"}`, {
+              description: `Unique slip ready for ${customer.name}.`,
+            });
+          }}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "4px",
+            padding: "4px 8px",
+            background: "#f8fafc",
+            border: "1px solid #cbd5e1",
+            borderRadius: "6px",
+            fontSize: "11px",
+            fontWeight: "600",
+            color: "#475569",
+            cursor: "pointer",
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          Slip
+        </button>
+      ),
+    },
   ];
 
   return (
@@ -182,6 +223,47 @@ export default function CustomerDetails({
               onClick={() => onOpenAddTransaction("Jama", customer.id)}
             >
               Receive Jama
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              icon={
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+              }
+              onClick={() => {
+                exportCustomerPDF(customer, transactions, shopInfo);
+                toast.success(`PDF Statement: ${customer.name}`, {
+                  description: "Customer statement prepared. Click Save as PDF in the print dialog.",
+                });
+              }}
+              title="Print or save customer statement as PDF"
+            >
+              PDF Statement
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              icon={
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 20V10"></path>
+                  <path d="M12 20V4"></path>
+                  <path d="M6 20v-6"></path>
+                </svg>
+              }
+              onClick={() => {
+                exportCustomerExcel(customer, transactions, shopInfo);
+                toast.success(`Excel Statement: ${customer.name}`, {
+                  description: "Customer statement downloaded as Excel CSV.",
+                });
+              }}
+              title="Download customer statement as Excel CSV"
+            >
+              Excel CSV
             </Button>
             <Button
               variant="outline"

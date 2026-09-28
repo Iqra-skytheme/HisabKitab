@@ -656,6 +656,17 @@ button, input, select, textarea {
 
 .stat-card.clickable {
   cursor: pointer;
+  user-select: none;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.2s ease;
+}
+
+.stat-card.clickable:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.stat-card.clickable:active {
+  transform: translateY(-1px);
 }
 
 .stat-card-header {
@@ -663,6 +674,28 @@ button, input, select, textarea {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
+}
+
+.stat-card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-card-click-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  opacity: 0.3;
+  transform: translateX(-3px);
+  transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease;
+}
+
+.stat-card.clickable:hover .stat-card-click-arrow {
+  opacity: 1;
+  transform: translateX(0);
+  color: var(--primary);
 }
 
 .stat-card-title {
@@ -1453,6 +1486,17 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+}
+
+.customer-export-select {
+  max-width: 250px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+}
+
+.customer-export-directory-card {
+  margin-bottom: 24px;
 }
 
 .export-toast {
@@ -2789,10 +2833,11 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
   color: #ffffff;
-  font-size: 32px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .avatar-upload-controls {
@@ -2804,12 +2849,6 @@ button, input, select, textarea {
   font-size: 15px;
   font-weight: 700;
   color: var(--text-main);
-}
-
-.avatar-ctrl-desc {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 2px;
   margin-bottom: 12px;
 }
 
@@ -2850,7 +2889,10 @@ button, input, select, textarea {
   border: 1px solid var(--border-color);
   background-color: var(--bg-surface);
   cursor: pointer;
-  font-size: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2858,14 +2900,29 @@ button, input, select, textarea {
 }
 
 .preset-chip:hover {
-  transform: scale(1.1);
-  border-color: var(--primary);
+  transform: scale(1.12);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 .preset-chip.active {
-  border-color: var(--primary);
-  background-color: var(--primary-light);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--primary);
+  transform: scale(1.08);
+}
+
+.sidebar-initials-badge {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.header-initials {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ffffff;
 }
 
 .form-divider {
@@ -2964,22 +3021,6 @@ button, input, select, textarea {
   transform: translateX(22px);
 }
 
-.security-notice-card {
-  display: flex;
-  gap: 14px;
-  background-color: var(--primary-light);
-  border: 1px solid #bfdbfe;
-  border-radius: var(--radius-md);
-  padding: 16px;
-  margin-bottom: 24px;
-  font-size: 13px;
-  color: #1e3a8a;
-}
-
-.security-icon {
-  font-size: 22px;
-  flex-shrink: 0;
-}
 
 .settings-form-actions {
   display: flex;

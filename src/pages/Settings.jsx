@@ -3,15 +3,7 @@ import { toast } from "sonner";
 import Button from "../components/Button";
 import { COUNTRY_CODES } from "../data/dummyData";
 import { updateOwnerPassword } from "../services/authService";
-
-const PRESET_AVATARS = [
-  { id: "av-blue", bg: "#2563eb", text: "MA", label: "Blue Monogram" },
-  { id: "av-slate", bg: "#0f172a", text: "HK", label: "Dark Monogram" },
-  { id: "av-emerald", bg: "#16a34a", text: "BS", label: "Emerald Store" },
-  { id: "av-amber", bg: "#d97706", text: "MK", label: "Amber Retail" },
-  { id: "av-indigo", bg: "#4f46e5", text: "TR", label: "Indigo Trader" },
-  { id: "av-purple", bg: "#7c3aed", text: "GS", label: "Purple Mart" },
-];
+import { getOwnerInitials, PRESET_PALETTES } from "../utils/avatarUtils";
 
 export default function Settings({
   shopInfo,
@@ -20,7 +12,7 @@ export default function Settings({
   const [formData, setFormData] = useState({
     name: shopInfo?.name || "",
     owner: shopInfo?.owner || "",
-    avatar: shopInfo?.avatar || "",
+    avatar: shopInfo?.avatar || PRESET_PALETTES[0].bg,
     bio: shopInfo?.bio || "",
     location: shopInfo?.location || "",
     countryCode: shopInfo?.countryCode || "+92",
@@ -55,11 +47,34 @@ export default function Settings({
     }));
   };
 
-  // Strictly enforce alphabets and spaces only for owner name
+  const isImageAvatar =
+    formData.avatar &&
+    (formData.avatar.startsWith("data:image") ||
+      formData.avatar.startsWith("http"));
+
+  const activePaletteColor =
+    formData.avatar && formData.avatar.startsWith("#")
+      ? formData.avatar
+      : PRESET_PALETTES[0].bg;
+
+  const currentInitials = getOwnerInitials(formData.owner);
+
+  // Strictly enforce alphabets and spaces only for owner name & auto-apply initial palette
   const handleOwnerChange = (e) => {
     const rawVal = e.target.value;
     const alphabetsOnly = rawVal.replace(/[^a-zA-Z\s]/g, "");
-    handleChange("owner", alphabetsOnly);
+    
+    setFormData((prev) => {
+      const isImg = prev.avatar && (prev.avatar.startsWith("data:image") || prev.avatar.startsWith("http"));
+      const fallbackColor = prev.avatar && prev.avatar.startsWith("#") ? prev.avatar : PRESET_PALETTES[0].bg;
+      return {
+        ...prev,
+        owner: alphabetsOnly,
+        // If owner didn't add any photo, automatically set initial palette color on its own:
+        avatar: isImg ? prev.avatar : fallbackColor,
+      };
+    });
+
     if (rawVal !== alphabetsOnly) {
       toast.warning("Numbers Not Allowed", {
         description: "Owner name can only contain alphabetic letters and spaces.",
@@ -95,16 +110,17 @@ export default function Settings({
   const handleSelectPreset = (preset) => {
     setSelectedAvatarPreset(preset.id);
     handleChange("avatar", preset.bg); // stores background color as custom styled avatar
-    toast.info("Avatar Style Selected", {
-      description: `Selected ${preset.label}. Click Save Settings to apply.`,
+    toast.info("Initial Palette Selected", {
+      description: `Selected ${preset.label} palette with initials "${currentInitials}". Click Save Settings to apply.`,
     });
   };
 
   const handleRemovePhoto = () => {
-    handleChange("avatar", "");
-    setSelectedAvatarPreset("");
+    const defaultColor = activePaletteColor || PRESET_PALETTES[0].bg;
+    handleChange("avatar", defaultColor);
+    setSelectedAvatarPreset(PRESET_PALETTES[0].id);
     toast.info("Profile photo cleared", {
-      description: "Default initials badge will be shown.",
+      description: `Defaulting to initial name palette with initials "${currentInitials}".`,
     });
   };
 
@@ -125,7 +141,14 @@ export default function Settings({
       return;
     }
 
-    onUpdateShopInfo(formData);
+    // If owner didn't add any photo, save with their initial palette color
+    const finalAvatar = isImageAvatar ? formData.avatar : activePaletteColor;
+
+    onUpdateShopInfo({
+      ...formData,
+      owner: cleanOwner,
+      avatar: finalAvatar,
+    });
   };
 
   const handleReset = () => {
@@ -155,14 +178,6 @@ export default function Settings({
       });
     }
   };
-
-  const isImageAvatar =
-    formData.avatar &&
-    (formData.avatar.startsWith("data:image") ||
-      formData.avatar.startsWith("http"));
-
-  const isColorPreset =
-    formData.avatar && formData.avatar.startsWith("#");
 
   return (
     <div className="page-settings">
@@ -225,7 +240,7 @@ export default function Settings({
                 <div className="settings-avatar-editor">
                   <div
                     className="avatar-preview-box"
-                    style={isColorPreset ? { backgroundColor: formData.avatar } : {}}
+                    style={{ backgroundColor: activePaletteColor }}
                   >
                     {isImageAvatar ? (
                       <img
@@ -234,17 +249,17 @@ export default function Settings({
                         className="avatar-preview-img"
                       />
                     ) : (
-                      <div className="avatar-preview-fallback">
-                        {formData.owner ? formData.owner.charAt(0).toUpperCase() : "M"}
+                      <div
+                        className="avatar-preview-fallback"
+                        style={{ backgroundColor: activePaletteColor }}
+                      >
+                        {currentInitials}
                       </div>
                     )}
                   </div>
 
                   <div className="avatar-upload-controls">
                     <h4 className="avatar-ctrl-title">Profile Picture</h4>
-                    <p className="avatar-ctrl-desc">
-                      Upload your store photograph, owner portrait, or pick a color style
-                    </p>
 
                     <div className="avatar-btn-row">
                       <label className="btn btn-outline btn-sm avatar-upload-label">
@@ -262,7 +277,7 @@ export default function Settings({
                         />
                       </label>
 
-                      {formData.avatar && (
+                      {isImageAvatar && (
                         <Button
                           type="button"
                           variant="ghost"
@@ -274,27 +289,25 @@ export default function Settings({
                       )}
                     </div>
 
-                    {/* Preset Color Themes */}
+                    {/* Preset Initial Palettes */}
                     <div className="preset-avatars-list">
                       <span className="preset-label">Or choose initial palette:</span>
                       <div className="preset-chips">
-                        {PRESET_AVATARS.map((preset) => (
-                          <button
-                            key={preset.id}
-                            type="button"
-                            className={`preset-chip preset-color-chip ${
-                              formData.avatar === preset.bg ||
-                              selectedAvatarPreset === preset.id
-                                ? "active"
-                                : ""
-                            }`}
-                            style={{ backgroundColor: preset.bg, color: "#ffffff" }}
-                            onClick={() => handleSelectPreset(preset)}
-                            title={preset.label}
-                          >
-                            <span>{preset.text}</span>
-                          </button>
-                        ))}
+                        {PRESET_PALETTES.map((preset) => {
+                          const isSelected = activePaletteColor === preset.bg && !isImageAvatar;
+                          return (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              className={`preset-chip preset-color-chip ${isSelected ? "active" : ""}`}
+                              style={{ backgroundColor: preset.bg, color: "#ffffff" }}
+                              onClick={() => handleSelectPreset(preset)}
+                              title={`${preset.label} (${currentInitials})`}
+                            >
+                              <span>{currentInitials}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -596,36 +609,6 @@ export default function Settings({
             {/* TAB 4: Security & PIN */}
             {activeTab === "security" && (
               <div className="settings-section-content">
-                <div className="security-notice-card">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                  </svg>
-                  <div>
-                    <strong>Enterprise Bcrypt/PBKDF2 Cryptographic Security</strong>
-                    <p>
-                      HisabKitab secures your credentials using salted key-stretching (100,000 PBKDF2 iterations).
-                      Passwords and PINs are never stored in plaintext.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="security-status-strip" style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  padding: "12px 16px",
-                  background: "rgba(34, 197, 94, 0.08)",
-                  border: "1px solid rgba(34, 197, 94, 0.25)",
-                  borderRadius: "10px",
-                  margin: "18px 0",
-                  fontSize: "13px",
-                  color: "#166534"
-                }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                  <span>Active Hash: <strong>PBKDF2-HMAC-SHA256 (Bcrypt Standard)</strong> • 32-Byte CSPRNG Salt Protected</span>
-                </div>
 
                 {pinSuccessMsg && (
                   <div className="alert alert-success" style={{

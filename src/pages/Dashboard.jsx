@@ -92,7 +92,6 @@ export default function Dashboard({
         <StatCard
           title="Total Customers"
           value={customers.length}
-          subtitle="Registered accounts"
           icon={
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -103,13 +102,12 @@ export default function Dashboard({
           }
           variant="primary"
           trend={{ direction: "up", label: "+4 new" }}
-          onClick={() => onNavigate("customers")}
+          onClick={() => onNavigate("customers", { statusFilter: "all" })}
         />
 
         <StatCard
           title="Total Udhaar (Given)"
           value={`${currency} ${totalUdhaar.toLocaleString()}`}
-          subtitle="Total credit extended"
           icon={
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
@@ -118,12 +116,12 @@ export default function Dashboard({
           }
           variant="danger"
           trend={{ direction: "up", label: "Credit" }}
+          onClick={() => onNavigate("transactions", { typeFilter: "Udhaar" })}
         />
 
         <StatCard
           title="Total Jama (Received)"
           value={`${currency} ${totalJama.toLocaleString()}`}
-          subtitle="Total cash collected"
           icon={
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
@@ -132,12 +130,12 @@ export default function Dashboard({
           }
           variant="success"
           trend={{ direction: "up", label: "Collected" }}
+          onClick={() => onNavigate("transactions", { typeFilter: "Jama" })}
         />
 
         <StatCard
           title="Net Receivable"
           value={`${currency} ${Math.max(0, netBalance).toLocaleString()}`}
-          subtitle={netBalance >= 0 ? "Pending market recovery" : "Advance collected"}
           icon={
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="5" width="20" height="14" rx="2"></rect>
@@ -145,6 +143,8 @@ export default function Dashboard({
             </svg>
           }
           variant="warning"
+          trend={{ direction: "up", label: "Recovery" }}
+          onClick={() => onNavigate("customers", { statusFilter: "pending" })}
         />
       </section>
 
@@ -152,7 +152,6 @@ export default function Dashboard({
       <section className="dashboard-quick-actions">
         <div className="quick-actions-info">
           <h3>Quick Operations</h3>
-          <p>Instantly log a transaction or register a new customer khata</p>
         </div>
         <div className="quick-actions-btns">
           <Button
@@ -206,12 +205,11 @@ export default function Dashboard({
           <div className="card-header-flex">
             <div>
               <h2 className="card-heading">Recent Transactions</h2>
-              <p className="card-subheading">Latest ledger entries recorded</p>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onNavigate("transactions")}
+              onClick={() => onNavigate("transactions", { typeFilter: "all" })}
             >
               View All →
             </Button>
@@ -232,12 +230,11 @@ export default function Dashboard({
           <div className="card-header-flex">
             <div>
               <h2 className="card-heading">Pending Recovery</h2>
-              <p className="card-subheading">Top customers with balance</p>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onNavigate("customers")}
+              onClick={() => onNavigate("customers", { statusFilter: "pending" })}
             >
               All →
             </Button>

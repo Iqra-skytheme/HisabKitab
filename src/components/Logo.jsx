@@ -3,7 +3,7 @@ export default function Logo({
   theme = "dark",   // "dark" | "light"
   size = "md",      // "xs" | "sm" | "md" | "lg" | "xl" | number
   showTagline = true,
-  tagline = "Digital Khata & Ledger",
+  tagline = "Garments Khata & Ledger",
   className = "",
   onClick,
 }) {
@@ -34,7 +34,7 @@ export default function Logo({
       xmlns="http://www.w3.org/2000/svg"
       className="hisabkitab-emblem-svg"
       style={{ display: "block", flexShrink: 0 }}
-      aria-label="HisabKitab Logo"
+      aria-label="Alam Garments Logo"
     >
       <defs>
         <linearGradient id={`hk-bg-${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -180,7 +180,7 @@ export default function Logo({
             color: titleColor,
           }}
         >
-          Hisab<span style={{ color: accentColor }}>Kitab</span>
+          Alam <span style={{ color: accentColor }}>Garments</span>
         </span>
 
         {showTagline && (

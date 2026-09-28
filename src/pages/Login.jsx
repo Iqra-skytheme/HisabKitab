@@ -153,10 +153,10 @@ export default function Login({ onLogin, shopInfo }) {
               <Logo size={68} variant="icon" />
             </div>
             <h1 className="login-3d-title">
-              Hisab<span className="title-accent">Kitab</span>
+              Alam <span className="title-accent">Garments</span>
             </h1>
             <p className="login-3d-subtitle">
-              {shopInfo?.name || "Bismillah General Store"} • Merchant Portal
+              {shopInfo?.name || "Alam Garments"} • Merchant Portal
             </p>
           </div>
 

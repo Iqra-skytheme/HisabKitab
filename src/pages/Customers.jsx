@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Table from "../components/Table";
 import Button from "../components/Button";
 
@@ -8,9 +8,16 @@ export default function Customers({
   onOpenAddCustomer,
   onOpenAddTransaction,
   currency = "Rs.",
+  initialStatusFilter = "all",
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
+
+  useEffect(() => {
+    if (initialStatusFilter) {
+      setStatusFilter(initialStatusFilter);
+    }
+  }, [initialStatusFilter]);
 
   const filteredCustomers = useMemo(() => {
     return customers.filter((customer) => {

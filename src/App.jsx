@@ -21,6 +21,12 @@ import {
   clearSession,
   initOwnerCredentials,
 } from "./services/authService";
+import {
+  generateUniqueReceiptNumber,
+  isReceiptNumberUnique,
+} from "./utils/receiptUtils";
+import { exportTransactionReceiptPDF } from "./services/exportService";
+
 
 export default function App() {
   // Session check on load: if authenticated, stay logged in across page reloads
@@ -103,15 +109,42 @@ export default function App() {
     openingBalance: "",
   });
 
-  // Navigation Helper with Page Persistence
-  const handleNavigate = (page, customerId = null) => {
+  const [activeTxnFilter, setActiveTxnFilter] = useState("all");
+  const [activeCustFilter, setActiveCustFilter] = useState("all");
+
+  // Navigation Helper with Page Persistence and Filter Parameters
+  const handleNavigate = (page, targetOrFilter = null) => {
     setCurrentPage(page);
+
+    if (page === "transactions") {
+      if (typeof targetOrFilter === "object" && targetOrFilter?.typeFilter) {
+        setActiveTxnFilter(targetOrFilter.typeFilter);
+      } else if (typeof targetOrFilter === "string" && ["all", "Udhaar", "Jama"].includes(targetOrFilter)) {
+        setActiveTxnFilter(targetOrFilter);
+      } else {
+        setActiveTxnFilter("all");
+      }
+    }
+
+    if (page === "customers") {
+      if (typeof targetOrFilter === "object" && targetOrFilter?.statusFilter) {
+        setActiveCustFilter(targetOrFilter.statusFilter);
+      } else if (typeof targetOrFilter === "string" && ["all", "pending", "cleared"].includes(targetOrFilter)) {
+        setActiveCustFilter(targetOrFilter);
+      } else {
+        setActiveCustFilter("all");
+      }
+    }
+
     try {
       localStorage.setItem("hisabkitab_currentPage", page);
-      if (customerId) {
-        setSelectedCustomerId(customerId);
-        localStorage.setItem("hisabkitab_selectedCustomerId", customerId);
-      } else if (page !== "customer-details") {
+      if (page === "customer-details") {
+        const id = typeof targetOrFilter === "string" ? targetOrFilter : targetOrFilter?.id;
+        if (id) {
+          setSelectedCustomerId(id);
+          localStorage.setItem("hisabkitab_selectedCustomerId", id);
+        }
+      } else {
         setSelectedCustomerId(null);
         localStorage.removeItem("hisabkitab_selectedCustomerId");
       }
@@ -124,7 +157,7 @@ export default function App() {
   // Open Add Transaction Modal
   const handleOpenAddTransaction = (type = "Udhaar", customerId = null) => {
     const defaultCust = customerId || (customers[0] ? customers[0].id : "");
-    const generatedSlip = `REC-${Math.floor(1000 + Math.random() * 9000)}`;
+    const generatedSlip = generateUniqueReceiptNumber(transactions, type);
     setTxnForm({
       customerId: defaultCust,
       type: type,
@@ -149,6 +182,24 @@ export default function App() {
       return;
     }
 
+    let candidateBillNumber = (txnForm.billNumber || "").trim();
+
+    // If billNumber is empty, automatically generate a guaranteed unique one
+    if (!candidateBillNumber) {
+      candidateBillNumber = generateUniqueReceiptNumber(transactions, txnForm.type);
+    } else {
+      // Validate uniqueness against all existing transactions in the system
+      const isUnique = isReceiptNumberUnique(candidateBillNumber, transactions);
+      if (!isUnique) {
+        const freshUniqueNumber = generateUniqueReceiptNumber(transactions, txnForm.type);
+        toast.error("Duplicate Receipt Number!", {
+          description: `"${candidateBillNumber}" already exists in records. Assigned new unique receipt: ${freshUniqueNumber}`,
+        });
+        setTxnForm((prev) => ({ ...prev, billNumber: freshUniqueNumber }));
+        return;
+      }
+    }
+
     const targetCustomer = customers.find((c) => c.id === txnForm.customerId);
     const customerName = targetCustomer ? targetCustomer.name : "Customer";
     const amountNum = Number(txnForm.amount);
@@ -162,7 +213,7 @@ export default function App() {
       date: txnForm.date || new Date().toISOString().split("T")[0],
       description: txnForm.description || (txnForm.type === "Udhaar" ? "General goods" : "Account payment"),
       paymentMethod: txnForm.paymentMethod,
-      billNumber: txnForm.billNumber || `REC-${Math.floor(1000 + Math.random() * 9000)}`,
+      billNumber: candidateBillNumber,
     };
 
     // Update transactions list
@@ -193,11 +244,19 @@ export default function App() {
 
     if (txnForm.type === "Udhaar") {
       toast.warning(`Udhaar Recorded: ${shopInfo.currency} ${amountNum.toLocaleString()}`, {
-        description: `Debited to ${customerName} (${newTxn.billNumber})`,
+        description: `Debited to ${customerName} (Unique Receipt: ${newTxn.billNumber})`,
+        action: {
+          label: "Print Receipt",
+          onClick: () => exportTransactionReceiptPDF(newTxn, targetCustomer, shopInfo),
+        },
       });
     } else {
       toast.success(`Jama Payment: ${shopInfo.currency} ${amountNum.toLocaleString()}`, {
-        description: `Received from ${customerName} via ${txnForm.paymentMethod}`,
+        description: `Received from ${customerName} (Unique Receipt: ${newTxn.billNumber})`,
+        action: {
+          label: "Print Receipt",
+          onClick: () => exportTransactionReceiptPDF(newTxn, targetCustomer, shopInfo),
+        },
       });
     }
   };
@@ -254,8 +313,9 @@ export default function App() {
 
     setCustomers((prev) => [newCustomer, ...prev]);
 
-    // If opening balance > 0, create an initial transaction entry
+    // If opening balance > 0, create an initial transaction entry with a guaranteed unique receipt number
     if (openBal > 0) {
+      const openReceiptNo = generateUniqueReceiptNumber(transactions, "Opening");
       const initialTxn = {
         id: `tx-${Date.now()}`,
         customerId: newId,
@@ -265,7 +325,7 @@ export default function App() {
         date: new Date().toISOString().split("T")[0],
         description: "Opening Previous Udhaar Balance",
         paymentMethod: "Khata Credit",
-        billNumber: `OPEN-${Math.floor(100 + Math.random() * 900)}`,
+        billNumber: openReceiptNo,
       };
       setTransactions((prev) => [initialTxn, ...prev]);
     }
@@ -386,6 +446,7 @@ export default function App() {
             onOpenAddCustomer={handleOpenAddCustomer}
             onOpenAddTransaction={handleOpenAddTransaction}
             currency={shopInfo.currency}
+            initialStatusFilter={activeCustFilter}
           />
         )}
 
@@ -396,6 +457,7 @@ export default function App() {
             onBack={() => handleNavigate("customers")}
             onOpenAddTransaction={handleOpenAddTransaction}
             currency={shopInfo.currency}
+            shopInfo={shopInfo}
           />
         )}
 
@@ -403,9 +465,11 @@ export default function App() {
           <Transactions
             transactions={transactions}
             customers={customers}
+            shopInfo={shopInfo}
             onSelectCustomer={(id) => handleNavigate("customer-details", id)}
             onOpenAddTransaction={handleOpenAddTransaction}
             currency={shopInfo.currency}
+            initialTypeFilter={activeTxnFilter}
           />
         )}
 
@@ -414,6 +478,8 @@ export default function App() {
             customers={customers}
             transactions={transactions}
             currency={shopInfo.currency}
+            shopInfo={shopInfo}
+            onSelectCustomer={(id) => handleNavigate("customer-details", id)}
           />
         )}
 
@@ -449,6 +515,7 @@ export default function App() {
                     ...prev,
                     type: "Udhaar",
                     paymentMethod: "Khata Credit",
+                    billNumber: generateUniqueReceiptNumber(transactions, "Udhaar"),
                   }))
                 }
               >
@@ -464,6 +531,7 @@ export default function App() {
                     ...prev,
                     type: "Jama",
                     paymentMethod: "Cash",
+                    billNumber: generateUniqueReceiptNumber(transactions, "Jama"),
                   }))
                 }
               >
@@ -555,19 +623,62 @@ export default function App() {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="txn-bill">
-                Bill / Receipt No.
-              </label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                <label className="form-label" htmlFor="txn-bill" style={{ margin: 0 }}>
+                  Bill / Receipt No.
+                </label>
+                <button
+                  type="button"
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "var(--primary)",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    padding: "0 2px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                  onClick={() => {
+                    const freshSlip = generateUniqueReceiptNumber(transactions, txnForm.type);
+                    setTxnForm((prev) => ({ ...prev, billNumber: freshSlip }));
+                  }}
+                  title="Regenerate a guaranteed unique receipt number"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                  </svg>
+                  Generate Unique
+                </button>
+              </div>
               <input
                 id="txn-bill"
                 type="text"
                 className="form-input"
-                placeholder="e.g. INV-1092"
+                placeholder="e.g. REC-2042"
                 value={txnForm.billNumber}
                 onChange={(e) =>
                   setTxnForm((prev) => ({ ...prev, billNumber: e.target.value }))
                 }
+                style={
+                  txnForm.billNumber && !isReceiptNumberUnique(txnForm.billNumber, transactions)
+                    ? { borderColor: "#ef4444", background: "#fef2f2" }
+                    : {}
+                }
               />
+              {txnForm.billNumber && !isReceiptNumberUnique(txnForm.billNumber, transactions) ? (
+                <div style={{ fontSize: "11px", color: "#dc2626", marginTop: "4px", fontWeight: "600" }}>
+                  ⚠ Receipt #{txnForm.billNumber} is already used! Each receipt must be strictly unique.
+                </div>
+              ) : txnForm.billNumber ? (
+                <div style={{ fontSize: "11px", color: "#16a34a", marginTop: "4px" }}>
+                  ✓ Guaranteed unique receipt number
+                </div>
+              ) : null}
             </div>
           </div>
 

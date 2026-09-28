@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { getOwnerInitials } from "../utils/avatarUtils";
 
 export default function Header({
   title,
@@ -36,6 +37,13 @@ export default function Header({
     shopInfo?.avatar &&
     (shopInfo.avatar.startsWith("data:image") ||
       shopInfo.avatar.startsWith("http"));
+
+  const paletteColor =
+    shopInfo?.avatar && shopInfo.avatar.startsWith("#")
+      ? shopInfo.avatar
+      : "#2563eb";
+
+  const ownerInitials = getOwnerInitials(shopInfo?.owner);
 
   const handleSettingsClick = () => {
     setDropdownOpen(false);
@@ -93,7 +101,10 @@ export default function Header({
             aria-expanded={dropdownOpen}
             aria-haspopup="true"
           >
-            <div className="profile-avatar">
+            <div
+              className="profile-avatar"
+              style={!isImageAvatar ? { backgroundColor: paletteColor, color: "#ffffff" } : {}}
+            >
               {isImageAvatar ? (
                 <img
                   src={shopInfo.avatar}
@@ -101,7 +112,7 @@ export default function Header({
                   className="header-avatar-img"
                 />
               ) : (
-                <span>{shopInfo?.owner ? shopInfo.owner.charAt(0).toUpperCase() : "M"}</span>
+                <span className="header-initials">{ownerInitials}</span>
               )}
             </div>
             <div className="profile-meta">
@@ -127,11 +138,14 @@ export default function Header({
           {dropdownOpen && (
             <div className="profile-dropdown-menu">
               <div className="dropdown-user-header">
-                <div className="dropdown-user-avatar">
+                <div
+                  className="dropdown-user-avatar"
+                  style={!isImageAvatar ? { backgroundColor: paletteColor, color: "#ffffff" } : {}}
+                >
                   {isImageAvatar ? (
                     <img src={shopInfo.avatar} alt="User" />
                   ) : (
-                    <span>{shopInfo?.owner ? shopInfo.owner.charAt(0).toUpperCase() : "M"}</span>
+                    <span className="header-initials">{ownerInitials}</span>
                   )}
                 </div>
                 <div className="dropdown-user-info">
