@@ -2,48 +2,76 @@ import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { generateUniqueReceiptSerial } from "../utils/receiptUtils";
 
-// Download HTML directly as an authentic PDF file
+// Download HTML directly as an authentic PDF file (guaranteed visible and non-blank)
 export async function downloadHtmlAsPdf(filename, htmlContent) {
-  const container = document.createElement("div");
-  container.style.position = "fixed";
-  container.style.left = "-9999px";
-  container.style.top = "0";
-  container.style.width = "794px"; // 794px corresponds to A4 portrait at 96 DPI
-  container.style.background = "#ffffff";
-  container.style.color = "#0f172a";
-  container.innerHTML = htmlContent;
-  document.body.appendChild(container);
+  // Create an active iframe positioned off the screen surface but active for browser rendering
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.top = "0";
+  iframe.style.left = "0";
+  iframe.style.width = "794px"; // 794px corresponds to A4 portrait at standard 96 DPI
+  iframe.style.height = "1123px";
+  iframe.style.zIndex = "-9999";
+  iframe.style.opacity = "0.01";
+  iframe.style.pointerEvents = "none";
+  iframe.style.border = "none";
+  document.body.appendChild(iframe);
 
   try {
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+
+    // Allow browser layout engine to fully parse fonts, styles, and dimensions
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    const renderTarget = doc.body;
+    const canvas = await html2canvas(renderTarget, {
+      scale: 2, // 2x high-DPI crisp resolution for crystal clear text
+      useCORS: true,
+      logging: false,
+      backgroundColor: "#ffffff",
+      windowWidth: 794,
+    });
+
+    const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF({
       orientation: "portrait",
-      unit: "pt",
+      unit: "mm",
       format: "a4",
       compress: true,
     });
 
-    await pdf.html(container, {
-      callback: (doc) => {
-        const cleanName = filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
-        doc.save(cleanName);
-      },
-      x: 10,
-      y: 10,
-      width: 575,
-      windowWidth: 794,
-      html2canvas: {
-        scale: 1.5,
-        useCORS: true,
-        logging: false,
-      },
-    });
+    const pageWidth = 210; // A4 width mm
+    const pageHeight = 297; // A4 height mm
+    const margin = 6; // 6mm margin
+    const contentWidth = pageWidth - (margin * 2);
+    const contentHeight = (canvas.height * contentWidth) / canvas.width;
+    const usableHeight = pageHeight - (margin * 2);
+
+    let heightLeft = contentHeight;
+    let page = 0;
+
+    while (heightLeft > 0) {
+      if (page > 0) {
+        pdf.addPage();
+      }
+      const positionY = margin - (page * usableHeight);
+      pdf.addImage(imgData, "PNG", margin, positionY, contentWidth, contentHeight);
+      heightLeft -= usableHeight;
+      page++;
+    }
+
+    const cleanName = filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
+    pdf.save(cleanName);
   } catch (err) {
-    console.warn("Direct PDF download fallback to print dialog", err);
+    console.error("Direct PDF download fallback to print dialog", err);
     printHtmlDocument(filename, htmlContent);
   } finally {
     setTimeout(() => {
-      if (document.body.contains(container)) {
-        document.body.removeChild(container);
+      if (document.body.contains(iframe)) {
+        document.body.removeChild(iframe);
       }
     }, 1500);
   }
