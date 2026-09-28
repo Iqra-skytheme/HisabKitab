@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import Button from "../components/Button";
-import { COUNTRY_CODES } from "../data/dummyData";
 import { updateOwnerPassword } from "../services/authService";
 import { getOwnerInitials, PRESET_PALETTES } from "../utils/avatarUtils";
 
@@ -335,30 +334,16 @@ export default function Settings({
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="setting-phone">
-                      Country Code & WhatsApp Number
+                      Phone Number
                     </label>
-                    <div className="phone-input-group">
-                      <select
-                        className="country-code-select"
-                        value={formData.countryCode || "+92"}
-                        onChange={(e) => handleChange("countryCode", e.target.value)}
-                        aria-label="Country Code"
-                      >
-                        {COUNTRY_CODES.map((item) => (
-                          <option key={item.code} value={item.code}>
-                            {item.code} ({item.country})
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        id="setting-phone"
-                        type="tel"
-                        className="form-input phone-number-input"
-                        placeholder="300-1234567"
-                        value={formData.phone}
-                        onChange={(e) => handleChange("phone", e.target.value)}
-                      />
-                    </div>
+                    <input
+                      id="setting-phone"
+                      type="tel"
+                      className="form-input"
+                      placeholder="e.g. 0300-1234567"
+                      value={formData.phone}
+                      onChange={(e) => handleChange("phone", e.target.value)}
+                    />
                   </div>
                 </div>
 
