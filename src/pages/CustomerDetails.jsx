@@ -128,11 +128,11 @@ export default function CustomerDetails({
         <button
           type="button"
           className="btn-print-receipt"
-          title="Print unique transaction receipt slip"
+          title="Download unique transaction receipt slip PDF"
           onClick={() => {
             exportTransactionReceiptPDF(row, customer, shopInfo);
-            toast.success(`Receipt Generated: ${row.billNumber || "Slip"}`, {
-              description: `Unique slip ready for ${customer.name}.`,
+            toast.success(`Receipt PDF Downloaded: ${row.billNumber || "Slip"}`, {
+              description: `Unique slip downloaded automatically for ${customer.name}.`,
             });
           }}
           style={{
@@ -238,10 +238,10 @@ export default function CustomerDetails({
               onClick={() => {
                 exportCustomerPDF(customer, transactions, shopInfo);
                 toast.success(`PDF Statement: ${customer.name}`, {
-                  description: "Customer statement prepared. Click Save as PDF in the print dialog.",
+                  description: "Customer statement PDF downloaded automatically.",
                 });
               }}
-              title="Print or save customer statement as PDF"
+              title="Download customer statement as PDF"
             >
               PDF Statement
             </Button>
@@ -258,12 +258,12 @@ export default function CustomerDetails({
               onClick={() => {
                 exportCustomerExcel(customer, transactions, shopInfo);
                 toast.success(`Excel Statement: ${customer.name}`, {
-                  description: "Customer statement downloaded as Excel CSV.",
+                  description: "Customer statement downloaded as formatted Excel (.xls).",
                 });
               }}
-              title="Download customer statement as Excel CSV"
+              title="Download customer statement as formatted Excel spreadsheet (.xls)"
             >
-              Excel CSV
+              Excel (.xls)
             </Button>
             <Button
               variant="outline"

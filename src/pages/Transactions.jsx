@@ -131,12 +131,12 @@ export default function Transactions({
           <button
             type="button"
             className="btn-print-receipt"
-            title="Generate and print unique receipt slip"
+            title="Download unique receipt slip PDF"
             onClick={(e) => {
               e.stopPropagation();
               exportTransactionReceiptPDF(row, targetCust, shopInfo);
-              toast.success(`Receipt Generated: ${row.billNumber || "Slip"}`, {
-                description: `Unique receipt slip ready for ${row.customerName}.`,
+              toast.success(`Receipt PDF Downloaded: ${row.billNumber || "Slip"}`, {
+                description: `Unique receipt slip downloaded automatically for ${row.customerName}.`,
               });
             }}
             style={{

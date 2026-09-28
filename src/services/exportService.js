@@ -1,27 +1,106 @@
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 import { generateUniqueReceiptSerial } from "../utils/receiptUtils";
 
+// Download HTML directly as an authentic PDF file
+export async function downloadHtmlAsPdf(filename, htmlContent) {
+  const container = document.createElement("div");
+  container.style.position = "fixed";
+  container.style.left = "-9999px";
+  container.style.top = "0";
+  container.style.width = "794px"; // 794px corresponds to A4 portrait at 96 DPI
+  container.style.background = "#ffffff";
+  container.style.color = "#0f172a";
+  container.innerHTML = htmlContent;
+  document.body.appendChild(container);
 
-// Helper to escape CSV fields
-function escapeCsv(value) {
-  if (value === null || value === undefined) return '""';
-  const str = String(value).replace(/"/g, '""');
-  return `"${str}"`;
+  try {
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "pt",
+      format: "a4",
+      compress: true,
+    });
+
+    await pdf.html(container, {
+      callback: (doc) => {
+        const cleanName = filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
+        doc.save(cleanName);
+      },
+      x: 10,
+      y: 10,
+      width: 575,
+      windowWidth: 794,
+      html2canvas: {
+        scale: 1.5,
+        useCORS: true,
+        logging: false,
+      },
+    });
+  } catch (err) {
+    console.warn("Direct PDF download fallback to print dialog", err);
+    printHtmlDocument(filename, htmlContent);
+  } finally {
+    setTimeout(() => {
+      if (document.body.contains(container)) {
+        document.body.removeChild(container);
+      }
+    }, 1500);
+  }
 }
 
-// Trigger browser file download
-function triggerDownload(content, filename, mimeType = "text/csv;charset=utf-8;") {
-  const blob = new Blob(["\uFEFF" + content], { type: mimeType });
+// Trigger formatted Excel spreadsheet download (.xls)
+function triggerExcelDownload(htmlTableContent, filename) {
+  const excelDoc = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8">
+<!--[if gte mso 9]>
+<xml>
+ <x:ExcelWorkbook>
+  <x:ExcelWorksheets>
+   <x:ExcelWorksheet>
+    <x:Name>Sheet1</x:Name>
+    <x:WorksheetOptions>
+     <x:DisplayGridlines/>
+    </x:WorksheetOptions>
+   </x:ExcelWorksheet>
+  </x:ExcelWorksheets>
+ </x:ExcelWorkbook>
+</xml>
+<![endif]-->
+<style>
+  table { border-collapse: collapse; font-family: Segoe UI, Calibri, Arial, sans-serif; font-size: 11pt; }
+  th { background-color: #1e3a8a; color: #ffffff; font-weight: bold; border: 1px solid #94a3b8; padding: 8px 12px; }
+  td { border: 1px solid #cbd5e1; padding: 7px 10px; font-size: 10.5pt; }
+  .title-cell { font-size: 16pt; font-weight: bold; color: #0f172a; border: none; }
+  .meta-cell { font-size: 10pt; color: #475569; border: none; }
+  .section-cell { background-color: #f1f5f9; font-weight: bold; font-size: 12pt; color: #1e293b; border: 1px solid #cbd5e1; }
+  .text-danger { color: #dc2626; font-weight: bold; }
+  .text-success { color: #16a34a; font-weight: bold; }
+  .text-right { text-align: right; }
+  .badge-active { background-color: #fef2f2; color: #b91c1c; font-weight: bold; text-align: center; }
+  .badge-clear { background-color: #f0fdf4; color: #15803d; font-weight: bold; text-align: center; }
+  .kpi-title { font-weight: bold; background-color: #f8fafc; }
+</style>
+</head>
+<body>
+${htmlTableContent}
+</body>
+</html>`;
+
+  const blob = new Blob(["\uFEFF" + excelDoc], { type: "application/vnd.ms-excel;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.setAttribute("download", filename);
+  const cleanName = filename.endsWith(".xls") ? filename : `${filename}.xls`;
+  a.setAttribute("download", cleanName);
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
-// Print HTML via an isolated iframe to trigger browser PDF saving
+// Print HTML via an isolated iframe (as print fallback)
 function printHtmlDocument(title, htmlContent) {
   // Create hidden iframe
   const iframe = document.createElement("iframe");
@@ -67,12 +146,14 @@ function printHtmlDocument(title, htmlContent) {
 // -------------------------------------------------------------
 
 /**
- * Export overall financial ledger to Excel / CSV
+ * Export overall financial ledger to a beautifully formatted Excel spreadsheet (.xls)
  */
 export function exportOverallExcel(customers = [], transactions = [], shopInfo = {}, period = "All Time") {
   const currency = shopInfo?.currency || "Rs.";
   const storeName = shopInfo?.name || "Bismillah Store";
   const owner = shopInfo?.owner || "Shop Owner";
+  const phone = shopInfo?.phone || "+92 300 1234567";
+  const address = shopInfo?.address || "Main Market, Pakistan";
   const dateStr = new Date().toLocaleDateString("en-PK", {
     year: "numeric",
     month: "long",
@@ -90,79 +171,117 @@ export function exportOverallExcel(customers = [], transactions = [], shopInfo =
   const netReceivable = totalUdhaar - totalJama;
   const recoveryRate = totalUdhaar > 0 ? Math.round((totalJama / totalUdhaar) * 100) : 100;
 
-  let csv = "";
+  const html = `
+    <table>
+      <tr>
+        <td colspan="7" class="title-cell">${storeName} - Financial Ledger & Recovery Report</td>
+      </tr>
+      <tr>
+        <td colspan="7" class="meta-cell">Proprietor: <strong>${owner}</strong> • Phone: ${phone} • ${address}</td>
+      </tr>
+      <tr>
+        <td colspan="7" class="meta-cell">Report Period: <strong>${period}</strong> • Generated On: <strong>${dateStr}</strong></td>
+      </tr>
+      <tr><td colspan="7" style="border:none;height:12px;"></td></tr>
 
-  // Title & Metadata
-  csv += `${escapeCsv("HISABKITAB - FINANCIAL LEDGER & RECOVERY REPORT")}\n`;
-  csv += `${escapeCsv("Store Name:")},${escapeCsv(storeName)}\n`;
-  csv += `${escapeCsv("Proprietor:")},${escapeCsv(owner)}\n`;
-  csv += `${escapeCsv("Report Period:")},${escapeCsv(period)}\n`;
-  csv += `${escapeCsv("Generated On:")},${escapeCsv(dateStr)}\n\n`;
+      <!-- KPI Executive Summary -->
+      <tr>
+        <td colspan="7" class="section-cell">EXECUTIVE FINANCIAL SUMMARY</td>
+      </tr>
+      <tr>
+        <th colspan="4" style="background-color:#0f172a;">Metric / KPI</th>
+        <th colspan="3" style="background-color:#0f172a;text-align:right;">Amount / Value</th>
+      </tr>
+      <tr>
+        <td colspan="4" class="kpi-title">Total Registered Accounts</td>
+        <td colspan="3" class="text-right">${customers.length} Customers</td>
+      </tr>
+      <tr>
+        <td colspan="4" class="kpi-title">Total Credit Extended (Udhaar)</td>
+        <td colspan="3" class="text-right text-danger">${currency} ${totalUdhaar.toLocaleString()}</td>
+      </tr>
+      <tr>
+        <td colspan="4" class="kpi-title">Total Cash Collected (Jama)</td>
+        <td colspan="3" class="text-right text-success">${currency} ${totalJama.toLocaleString()}</td>
+      </tr>
+      <tr>
+        <td colspan="4" class="kpi-title">Net Outstanding Receivable</td>
+        <td colspan="3" class="text-right" style="font-weight:bold;color:#1e3a8a;">${currency} ${Math.max(0, netReceivable).toLocaleString()}</td>
+      </tr>
+      <tr>
+        <td colspan="4" class="kpi-title">Overall Recovery Rate</td>
+        <td colspan="3" class="text-right" style="font-weight:bold;color:#15803d;">${recoveryRate}%</td>
+      </tr>
+      <tr><td colspan="7" style="border:none;height:16px;"></td></tr>
 
-  // Executive Summary
-  csv += `${escapeCsv("--- EXECUTIVE FINANCIAL SUMMARY ---")}\n`;
-  csv += `${escapeCsv("Metric")},${escapeCsv("Value")}\n`;
-  csv += `${escapeCsv("Total Registered Customers")},${escapeCsv(customers.length)}\n`;
-  csv += `${escapeCsv("Total Credit Extended (Udhaar)")},${escapeCsv(`${currency} ${totalUdhaar.toLocaleString()}`)}\n`;
-  csv += `${escapeCsv("Total Cash Collected (Jama)")},${escapeCsv(`${currency} ${totalJama.toLocaleString()}`)}\n`;
-  csv += `${escapeCsv("Net Outstanding Receivable")},${escapeCsv(`${currency} ${Math.max(0, netReceivable).toLocaleString()}`)}\n`;
-  csv += `${escapeCsv("Overall Recovery Rate")},${escapeCsv(`${recoveryRate}%`)}\n\n`;
+      <!-- Customer Khata Balances -->
+      <tr>
+        <td colspan="7" class="section-cell">CUSTOMER KHATA BALANCES</td>
+      </tr>
+      <tr>
+        <th style="background-color:#1e40af;">Customer Name</th>
+        <th style="background-color:#1e40af;">Phone</th>
+        <th style="background-color:#1e40af;">Address</th>
+        <th style="background-color:#1e40af;text-align:right;">Total Udhaar</th>
+        <th style="background-color:#1e40af;text-align:right;">Total Jama</th>
+        <th style="background-color:#1e40af;text-align:right;">Net Balance</th>
+        <th style="background-color:#1e40af;text-align:center;">Status</th>
+      </tr>
+      ${customers.map((c, i) => {
+        const bal = c.balance || 0;
+        const bg = i % 2 === 0 ? "#ffffff" : "#f8fafc";
+        return `
+        <tr style="background-color:${bg};">
+          <td><strong>${c.name}</strong></td>
+          <td>${c.phone}</td>
+          <td>${c.address || "Local Customer"}</td>
+          <td class="text-right text-danger">${currency} ${(c.totalUdhaar || 0).toLocaleString()}</td>
+          <td class="text-right text-success">${currency} ${(c.totalJama || 0).toLocaleString()}</td>
+          <td class="text-right" style="font-weight:bold;color:${bal > 0 ? "#dc2626" : "#16a34a"};">${currency} ${bal.toLocaleString()}</td>
+          <td class="${bal > 0 ? "badge-active" : "badge-clear"}">${bal > 0 ? "Pending Balance" : "Cleared"}</td>
+        </tr>`;
+      }).join("")}
+      <tr><td colspan="7" style="border:none;height:16px;"></td></tr>
 
-  // Customers Directory Breakdown
-  csv += `${escapeCsv("--- CUSTOMER KHATA BALANCES ---")}\n`;
-  csv += [
-    escapeCsv("Customer Name"),
-    escapeCsv("Phone Number"),
-    escapeCsv("Address"),
-    escapeCsv("Total Udhaar"),
-    escapeCsv("Total Jama"),
-    escapeCsv("Net Balance Owed"),
-    escapeCsv("Account Status"),
-  ].join(",") + "\n";
+      <!-- Complete Transactions Ledger -->
+      <tr>
+        <td colspan="7" class="section-cell">TRANSACTION LEDGER ENTRIES</td>
+      </tr>
+      <tr>
+        <th style="background-color:#0f172a;">Date</th>
+        <th style="background-color:#0f172a;">Slip #</th>
+        <th style="background-color:#0f172a;">Customer</th>
+        <th style="background-color:#0f172a;">Type</th>
+        <th style="background-color:#0f172a;">Description / Items</th>
+        <th style="background-color:#0f172a;">Payment Method</th>
+        <th style="background-color:#0f172a;text-align:right;">Amount</th>
+      </tr>
+      ${transactions.map((t, i) => {
+        const isUdhaar = t.type === "Udhaar";
+        const bg = i % 2 === 0 ? "#ffffff" : "#f8fafc";
+        return `
+        <tr style="background-color:${bg};">
+          <td>${t.date}</td>
+          <td style="font-family:monospace;font-weight:bold;">${t.billNumber || "-"}</td>
+          <td><strong>${t.customerName}</strong></td>
+          <td style="font-weight:bold;color:${isUdhaar ? "#dc2626" : "#16a34a"};">${t.type}</td>
+          <td>${t.description || "N/A"}</td>
+          <td>${t.paymentMethod || "Cash"}</td>
+          <td class="text-right" style="font-weight:bold;color:${isUdhaar ? "#dc2626" : "#16a34a"};">
+            ${isUdhaar ? "-" : "+"} ${currency} ${Number(t.amount || 0).toLocaleString()}
+          </td>
+        </tr>`;
+      }).join("")}
+    </table>
+  `;
 
-  customers.forEach((c) => {
-    csv += [
-      escapeCsv(c.name),
-      escapeCsv(c.phone),
-      escapeCsv(c.address || "Local"),
-      escapeCsv(`${currency} ${(c.totalUdhaar || 0).toLocaleString()}`),
-      escapeCsv(`${currency} ${(c.totalJama || 0).toLocaleString()}`),
-      escapeCsv(`${currency} ${(c.balance || 0).toLocaleString()}`),
-      escapeCsv((c.balance || 0) > 0 ? "Pending Balance" : "Cleared"),
-    ].join(",") + "\n";
-  });
-  csv += "\n";
-
-  // Detailed Transactions
-  csv += `${escapeCsv("--- COMPLETE TRANSACTION LEDGER ---")}\n`;
-  csv += [
-    escapeCsv("Date"),
-    escapeCsv("Slip #"),
-    escapeCsv("Customer Name"),
-    escapeCsv("Type"),
-    escapeCsv("Description"),
-    escapeCsv("Payment Method"),
-    escapeCsv("Amount"),
-  ].join(",") + "\n";
-
-  transactions.forEach((t) => {
-    csv += [
-      escapeCsv(t.date),
-      escapeCsv(t.billNumber || "-"),
-      escapeCsv(t.customerName),
-      escapeCsv(t.type),
-      escapeCsv(t.description || "N/A"),
-      escapeCsv(t.paymentMethod || "Cash"),
-      escapeCsv(`${t.type === "Udhaar" ? "-" : "+"} ${currency} ${Number(t.amount || 0).toLocaleString()}`),
-    ].join(",") + "\n";
-  });
-
-  const filename = `${storeName.replace(/\s+/g, "_")}_Financial_Report_${new Date().toISOString().split("T")[0]}.csv`;
-  triggerDownload(csv, filename);
+  const cleanStoreName = storeName.replace(/[^a-zA-Z0-9]/g, "_");
+  const filename = `${cleanStoreName}_Financial_Report_${new Date().toISOString().split("T")[0]}.xls`;
+  triggerExcelDownload(html, filename);
 }
 
 /**
- * Export an individual customer's khata statement to Excel / CSV
+ * Export an individual customer's khata statement to formatted Excel (.xls)
  */
 export function exportCustomerExcel(customer, transactions = [], shopInfo = {}) {
   if (!customer) return;
@@ -170,13 +289,14 @@ export function exportCustomerExcel(customer, transactions = [], shopInfo = {}) 
   const currency = shopInfo?.currency || "Rs.";
   const storeName = shopInfo?.name || "Bismillah Store";
   const owner = shopInfo?.owner || "Shop Owner";
+  const phone = shopInfo?.phone || "+92 300 1234567";
+  const address = shopInfo?.address || "Main Market, Pakistan";
   const dateStr = new Date().toLocaleDateString("en-PK", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
 
-  // Filter transactions for this customer and sort chronologically
   const customerTxns = transactions
     .filter((t) => t.customerId === customer.id)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -201,55 +321,92 @@ export function exportCustomerExcel(customer, transactions = [], shopInfo = {}) 
 
   const netBalance = totalUdhaar - totalJama;
 
-  let csv = "";
+  const html = `
+    <table>
+      <tr>
+        <td colspan="7" class="title-cell">${storeName} - Customer Khata Statement</td>
+      </tr>
+      <tr>
+        <td colspan="7" class="meta-cell">Proprietor: <strong>${owner}</strong> • Tel: ${phone} • ${address}</td>
+      </tr>
+      <tr>
+        <td colspan="7" class="meta-cell">Statement Date: <strong>${dateStr}</strong></td>
+      </tr>
+      <tr><td colspan="7" style="border:none;height:12px;"></td></tr>
 
-  // Customer Statement Header
-  csv += `${escapeCsv("HISABKITAB - CUSTOMER KHATA STATEMENT")}\n`;
-  csv += `${escapeCsv("Store Name:")},${escapeCsv(storeName)}\n`;
-  csv += `${escapeCsv("Proprietor:")},${escapeCsv(owner)}\n`;
-  csv += `${escapeCsv("Customer Name:")},${escapeCsv(customer.name)}\n`;
-  csv += `${escapeCsv("Phone Number:")},${escapeCsv(customer.phone)}\n`;
-  csv += `${escapeCsv("Address:")},${escapeCsv(customer.address || "Local Customer")}\n`;
-  csv += `${escapeCsv("Statement Date:")},${escapeCsv(dateStr)}\n`;
-  csv += `${escapeCsv("Current Account Status:")},${escapeCsv(netBalance > 0 ? "Pending Balance" : "Account Cleared")}\n`;
-  csv += `${escapeCsv("Current Outstanding Balance:")},${escapeCsv(`${currency} ${netBalance.toLocaleString()}`)}\n\n`;
+      <!-- Customer Profile Banner -->
+      <tr>
+        <td colspan="7" class="section-cell">CUSTOMER PROFILE</td>
+      </tr>
+      <tr>
+        <th colspan="2" style="background-color:#1e40af;">Customer Name</th>
+        <th colspan="2" style="background-color:#1e40af;">Phone</th>
+        <th colspan="2" style="background-color:#1e40af;">Address</th>
+        <th style="background-color:#1e40af;text-align:center;">Account Status</th>
+      </tr>
+      <tr>
+        <td colspan="2"><strong>${customer.name}</strong></td>
+        <td colspan="2">${customer.phone}</td>
+        <td colspan="2">${customer.address || "Local Customer"}</td>
+        <td class="${netBalance > 0 ? "badge-active" : "badge-clear"}">${netBalance > 0 ? "Pending Balance" : "Cleared"}</td>
+      </tr>
+      <tr><td colspan="7" style="border:none;height:12px;"></td></tr>
 
-  // Summary Totals
-  csv += `${escapeCsv("--- ACCOUNT SUMMARY ---")}\n`;
-  csv += `${escapeCsv("Total Udhaar Taken:")},${escapeCsv(`${currency} ${totalUdhaar.toLocaleString()}`)}\n`;
-  csv += `${escapeCsv("Total Jama Paid:")},${escapeCsv(`${currency} ${totalJama.toLocaleString()}`)}\n`;
-  csv += `${escapeCsv("Net Balance Due:")},${escapeCsv(`${currency} ${netBalance.toLocaleString()}`)}\n\n`;
+      <!-- Account Summary -->
+      <tr>
+        <td colspan="7" class="section-cell">ACCOUNT TOTALS SUMMARY</td>
+      </tr>
+      <tr>
+        <th colspan="3" style="background-color:#0f172a;">Financial Metric</th>
+        <th colspan="4" style="background-color:#0f172a;text-align:right;">Amount (${currency})</th>
+      </tr>
+      <tr>
+        <td colspan="3" class="kpi-title">Total Credit (Udhaar Taken)</td>
+        <td colspan="4" class="text-right text-danger">${currency} ${totalUdhaar.toLocaleString()}</td>
+      </tr>
+      <tr>
+        <td colspan="3" class="kpi-title">Total Payments (Jama Paid)</td>
+        <td colspan="4" class="text-right text-success">${currency} ${totalJama.toLocaleString()}</td>
+      </tr>
+      <tr style="background-color:#eff6ff;">
+        <td colspan="3" class="kpi-title" style="font-size:12pt;font-weight:bold;color:#1e3a8a;">Net Outstanding Balance Due</td>
+        <td colspan="4" class="text-right" style="font-size:12pt;font-weight:bold;color:${netBalance > 0 ? "#dc2626" : "#16a34a"};">${currency} ${netBalance.toLocaleString()}</td>
+      </tr>
+      <tr><td colspan="7" style="border:none;height:16px;"></td></tr>
 
-  // Chronological Statement Table
-  csv += `${escapeCsv("--- DETAILED STATEMENT OF ACCOUNT ---")}\n`;
-  csv += [
-    escapeCsv("Date"),
-    escapeCsv("Slip #"),
-    escapeCsv("Entry Type"),
-    escapeCsv("Description / Items"),
-    escapeCsv("Payment Method"),
-    escapeCsv("Debit (Udhaar)"),
-    escapeCsv("Credit (Jama)"),
-    escapeCsv("Account Balance"),
-  ].join(",") + "\n";
-
-  statementRows.forEach((row) => {
-    const isUdhaar = row.type === "Udhaar";
-    csv += [
-      escapeCsv(row.date),
-      escapeCsv(row.billNumber || "-"),
-      escapeCsv(isUdhaar ? "Udhaar (Credit Given)" : "Jama (Payment Received)"),
-      escapeCsv(row.description || (isUdhaar ? "Goods purchase" : "Account payment")),
-      escapeCsv(row.paymentMethod || "Cash"),
-      escapeCsv(isUdhaar ? `${currency} ${Number(row.amount).toLocaleString()}` : "-"),
-      escapeCsv(!isUdhaar ? `${currency} ${Number(row.amount).toLocaleString()}` : "-"),
-      escapeCsv(`${currency} ${row.balanceAfter.toLocaleString()}`),
-    ].join(",") + "\n";
-  });
+      <!-- Detailed Statement of Account -->
+      <tr>
+        <td colspan="7" class="section-cell">CHRONOLOGICAL STATEMENT OF ACCOUNT</td>
+      </tr>
+      <tr>
+        <th style="background-color:#1e3a8a;">Date</th>
+        <th style="background-color:#1e3a8a;">Slip #</th>
+        <th style="background-color:#1e3a8a;">Description / Particulars</th>
+        <th style="background-color:#1e3a8a;">Channel</th>
+        <th style="background-color:#1e3a8a;text-align:right;">Debit (Udhaar)</th>
+        <th style="background-color:#1e3a8a;text-align:right;">Credit (Jama)</th>
+        <th style="background-color:#1e3a8a;text-align:right;">Running Balance</th>
+      </tr>
+      ${statementRows.map((r, i) => {
+        const isUdhaar = r.type === "Udhaar";
+        const bg = i % 2 === 0 ? "#ffffff" : "#f8fafc";
+        return `
+        <tr style="background-color:${bg};">
+          <td>${r.date}</td>
+          <td style="font-family:monospace;font-weight:bold;">${r.billNumber || "-"}</td>
+          <td><strong>${r.description || (isUdhaar ? "Goods purchase" : "Account credit payment")}</strong></td>
+          <td>${r.paymentMethod || "Cash"}</td>
+          <td class="text-right text-danger">${isUdhaar ? `${currency} ${Number(r.amount).toLocaleString()}` : "-"}</td>
+          <td class="text-right text-success">${!isUdhaar ? `${currency} ${Number(r.amount).toLocaleString()}` : "-"}</td>
+          <td class="text-right" style="font-weight:bold;color:#0f172a;">${currency} ${r.balanceAfter.toLocaleString()}</td>
+        </tr>`;
+      }).join("")}
+    </table>
+  `;
 
   const cleanCustomerName = customer.name.replace(/[^a-zA-Z0-9]/g, "_");
-  const filename = `Khata_Statement_${cleanCustomerName}_${new Date().toISOString().split("T")[0]}.csv`;
-  triggerDownload(csv, filename);
+  const filename = `Khata_Statement_${cleanCustomerName}_${new Date().toISOString().split("T")[0]}.xls`;
+  triggerExcelDownload(html, filename);
 }
 
 // -------------------------------------------------------------
@@ -526,7 +683,9 @@ export function exportOverallPDF(customers = [], transactions = [], shopInfo = {
 </body>
 </html>`;
 
-  printHtmlDocument(`${storeName}_Financial_Report`, html);
+  const cleanStoreName = storeName.replace(/[^a-zA-Z0-9]/g, "_");
+  const filename = `${cleanStoreName}_Financial_Report_${new Date().toISOString().split("T")[0]}.pdf`;
+  downloadHtmlAsPdf(filename, html);
 }
 
 /**
@@ -826,7 +985,8 @@ export function exportCustomerPDF(customer, transactions = [], shopInfo = {}) {
 </html>`;
 
   const cleanCustomerName = customer.name.replace(/[^a-zA-Z0-9]/g, "_");
-  printHtmlDocument(`Khata_Statement_${cleanCustomerName}`, html);
+  const filename = `${cleanCustomerName}_Khata_Statement_${new Date().toISOString().split("T")[0]}.pdf`;
+  downloadHtmlAsPdf(filename, html);
 }
 
 /**
@@ -1077,5 +1237,7 @@ export function exportTransactionReceiptPDF(transaction = {}, customer = {}, sho
 </html>`;
 
   const cleanNo = billNo.replace(/[^a-zA-Z0-9]/g, "_");
-  printHtmlDocument(`Receipt_${cleanNo}`, html);
+  const cleanCustomerName = customerName.replace(/[^a-zA-Z0-9]/g, "_");
+  const filename = `Receipt_${cleanNo}_${cleanCustomerName}.pdf`;
+  downloadHtmlAsPdf(filename, html);
 }

@@ -7,8 +7,11 @@ export default function Table({
   className = "",
 }) {
   return (
-    <div className={`table-container ${className}`}>
-      <table className="custom-table">
+    <div
+      className={`table-container ${className}`}
+      style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", width: "100%" }}
+    >
+      <table className="custom-table" style={{ width: "100%", whiteSpace: "nowrap" }}>
         <thead>
           <tr>
             {columns.map((col, index) => (
@@ -17,6 +20,7 @@ export default function Table({
                 style={{
                   textAlign: col.align || "left",
                   width: col.width || "auto",
+                  whiteSpace: "nowrap",
                 }}
               >
                 {col.header}
@@ -51,7 +55,7 @@ export default function Table({
                 {columns.map((col, colIndex) => (
                   <td
                     key={col.key || colIndex}
-                    style={{ textAlign: col.align || "left" }}
+                    style={{ textAlign: col.align || "left", whiteSpace: "nowrap" }}
                   >
                     {col.render
                       ? col.render(row, rowIndex)

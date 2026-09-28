@@ -59,12 +59,12 @@ export default function Reports({
       if (type === "PDF") {
         exportCustomerPDF(targetCustomer, transactions, shopInfo);
         toast.success(`PDF Statement: ${targetCustomer.name}`, {
-          description: "Customer statement prepared. Click Save as PDF in the print dialog.",
+          description: "Customer statement PDF downloaded automatically.",
         });
       } else {
         exportCustomerExcel(targetCustomer, transactions, shopInfo);
         toast.success(`Excel Statement: ${targetCustomer.name}`, {
-          description: "Customer statement downloaded as Excel CSV.",
+          description: "Customer statement downloaded as formatted Excel (.xls).",
         });
       }
       return;
@@ -74,13 +74,13 @@ export default function Reports({
     if (selectedCustomerId === "all") {
       if (type === "PDF") {
         exportOverallPDF(customers, transactions, shopInfo, selectedPeriod, monthlyReportData);
-        toast.success("Business PDF Report Generated", {
-          description: "Full financial report prepared. Select 'Save as PDF' to save.",
+        toast.success("Business PDF Report Downloaded", {
+          description: "Full financial report PDF downloaded automatically.",
         });
       } else {
         exportOverallExcel(customers, transactions, shopInfo, selectedPeriod);
         toast.success("Business Excel Report Downloaded", {
-          description: "Comprehensive financial ledger exported to Excel CSV.",
+          description: "Comprehensive financial ledger exported as formatted Excel (.xls).",
         });
       }
     } else {
@@ -89,12 +89,12 @@ export default function Reports({
       if (type === "PDF") {
         exportCustomerPDF(cust, transactions, shopInfo);
         toast.success(`PDF Statement: ${cust.name}`, {
-          description: "Customer statement prepared. Click Save as PDF in the print dialog.",
+          description: "Customer statement PDF downloaded automatically.",
         });
       } else {
         exportCustomerExcel(cust, transactions, shopInfo);
         toast.success(`Excel Statement: ${cust.name}`, {
-          description: "Customer statement downloaded as Excel CSV.",
+          description: "Customer statement downloaded as formatted Excel (.xls).",
         });
       }
     }

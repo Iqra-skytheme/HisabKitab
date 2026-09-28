@@ -329,7 +329,6 @@ export default function Settings({
                       onChange={handleOwnerChange}
                       required
                     />
-                    <span className="field-hint">Numbers and digits are not permitted.</span>
                   </div>
 
                   <div className="form-group">
@@ -361,16 +360,11 @@ export default function Settings({
                   />
                 </div>
 
-                {/* Bio / Description */}
+                {/* Bio */}
                 <div className="form-group">
-                  <div className="label-with-link">
-                    <label className="form-label" htmlFor="setting-bio">
-                      Store Tagline / Bio
-                    </label>
-                    <span className="char-count">
-                      {formData.bio.length}/180 characters
-                    </span>
-                  </div>
+                  <label className="form-label" htmlFor="setting-bio">
+                    Bio
+                  </label>
                   <textarea
                     id="setting-bio"
                     className="form-input form-textarea"
@@ -380,15 +374,17 @@ export default function Settings({
                     value={formData.bio}
                     onChange={(e) => handleChange("bio", e.target.value)}
                   ></textarea>
-                  <span className="field-hint">
-                    Displayed on your customer ledger statements and profile card.
-                  </span>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "4px" }}>
+                    <span className="char-count" style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: "500" }}>
+                      {formData.bio.length} / 180 characters
+                    </span>
+                  </div>
                 </div>
 
-                {/* Location / Address */}
+                {/* Location */}
                 <div className="form-group">
                   <label className="form-label" htmlFor="setting-location">
-                    Shop Address & Location *
+                    Location *
                   </label>
                   <div className="input-with-icon">
                     <span className="input-icon">
@@ -407,9 +403,6 @@ export default function Settings({
                       required
                     />
                   </div>
-                  <span className="field-hint">
-                    Appears on digital invoice headers and receipt summaries.
-                  </span>
                 </div>
               </div>
             )}
