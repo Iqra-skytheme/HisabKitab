@@ -444,7 +444,7 @@ export function exportCustomerExcel(customer, transactions = [], shopInfo = {}) 
 /**
  * Generate and trigger print/save PDF for overall financial report
  */
-export function exportOverallPDF(customers = [], transactions = [], shopInfo = {}, period = "All Time", monthlyReportData = []) {
+export function exportOverallPDF(customers = [], transactions = [], shopInfo = {}, period = "All Time") {
   const currency = shopInfo?.currency || "Rs.";
   const storeName = shopInfo?.name || "Bismillah Store";
   const owner = shopInfo?.owner || "Shop Owner";

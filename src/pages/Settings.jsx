@@ -3,10 +3,12 @@ import { toast } from "sonner";
 import Button from "../components/Button";
 import { updateOwnerPassword } from "../services/authService";
 import { getOwnerInitials, PRESET_PALETTES } from "../utils/avatarUtils";
+import { getEmailLogs, clearEmailLogs, resendEmailNotification } from "../services/emailService";
 
 export default function Settings({
   shopInfo,
   onUpdateShopInfo,
+  onPreviewEmail,
 }) {
   const [formData, setFormData] = useState({
     name: shopInfo?.name || "",
@@ -23,6 +25,7 @@ export default function Settings({
     reminderDays: shopInfo?.reminderDays || "15",
     creditLimit: shopInfo?.creditLimit || 50000,
     whatsappReceipts: shopInfo?.whatsappReceipts ?? true,
+    whatsappMode: shopInfo?.whatsappMode || "universal",
     smsReminders: shopInfo?.smsReminders ?? true,
     autoBackup: shopInfo?.autoBackup ?? true,
     securityPin: shopInfo?.securityPin || "1234",
@@ -167,6 +170,7 @@ export default function Settings({
         reminderDays: shopInfo?.reminderDays || "15",
         creditLimit: shopInfo?.creditLimit || 50000,
         whatsappReceipts: shopInfo?.whatsappReceipts ?? true,
+        whatsappMode: shopInfo?.whatsappMode || "universal",
         smsReminders: shopInfo?.smsReminders ?? true,
         autoBackup: shopInfo?.autoBackup ?? true,
         securityPin: shopInfo?.securityPin || "1234",
@@ -293,7 +297,7 @@ export default function Settings({
                       <span className="preset-label">Or choose initial palette:</span>
                       <div className="preset-chips">
                         {PRESET_PALETTES.map((preset) => {
-                          const isSelected = activePaletteColor === preset.bg && !isImageAvatar;
+                          const isSelected = (selectedAvatarPreset === preset.id || activePaletteColor === preset.bg) && !isImageAvatar;
                           return (
                             <button
                               key={preset.id}
@@ -526,6 +530,25 @@ export default function Settings({
                 <div className="toggle-list">
                   <div className="toggle-row">
                     <div className="toggle-info">
+                      <h4 className="toggle-title">📧 Debit & Credit Email Notifications</h4>
+                      <p className="toggle-desc">
+                        Automatically dispatch instant confirmation emails with balance updates on every customer Udhaar or Jama transaction.
+                      </p>
+                    </div>
+                    <label className="switch-toggle">
+                      <input
+                        type="checkbox"
+                        checked={formData.emailNotifications ?? true}
+                        onChange={(e) =>
+                          handleChange("emailNotifications", e.target.checked)
+                        }
+                      />
+                      <span className="switch-slider"></span>
+                    </label>
+                  </div>
+
+                  <div className="toggle-row">
+                    <div className="toggle-info">
                       <h4 className="toggle-title">WhatsApp Instant Receipts</h4>
                       <p className="toggle-desc">
                         Provide quick 1-click WhatsApp transaction confirmation slips to customers.
@@ -541,6 +564,24 @@ export default function Settings({
                       />
                       <span className="switch-slider"></span>
                     </label>
+                  </div>
+
+                  <div className="toggle-row">
+                    <div className="toggle-info">
+                      <h4 className="toggle-title">WhatsApp Launch Preference</h4>
+                      <p className="toggle-desc">
+                        Select whether 1-click reminders open via universal Click-to-Chat (wa.me) or directly in WhatsApp Web.
+                      </p>
+                    </div>
+                    <select
+                      className="form-input"
+                      style={{ width: "auto", minWidth: "190px", fontWeight: "600", fontSize: "12px", padding: "6px 10px" }}
+                      value={formData.whatsappMode || "universal"}
+                      onChange={(e) => handleChange("whatsappMode", e.target.value)}
+                    >
+                      <option value="universal">Universal (wa.me - App & Web)</option>
+                      <option value="web">Direct WhatsApp Web (web.whatsapp.com)</option>
+                    </select>
                   </div>
 
                   <div className="toggle-row">
@@ -580,6 +621,117 @@ export default function Settings({
                       <span className="switch-slider"></span>
                     </label>
                   </div>
+                </div>
+
+                {/* Email Outbox & Audit Trail Sub-Section */}
+                <div style={{ marginTop: "32px", borderTop: "1px solid #e2e8f0", paddingTop: "20px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: "15px", fontWeight: "700", color: "var(--text-main)" }}>
+                        📬 Transaction Email Outbox & Audit Logs
+                      </h3>
+                      <p style={{ margin: "3px 0 0 0", fontSize: "12px", color: "var(--text-muted)" }}>
+                        Official confirmation emails recorded and dispatched to registered customer email addresses.
+                      </p>
+                    </div>
+                    {getEmailLogs().length > 0 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          clearEmailLogs();
+                          toast.info("Email Audit Logs Cleared");
+                        }}
+                      >
+                        Clear Log History
+                      </Button>
+                    )}
+                  </div>
+
+                  {getEmailLogs().length === 0 ? (
+                    <div style={{
+                      padding: "24px",
+                      textAlign: "center",
+                      background: "#f8fafc",
+                      borderRadius: "8px",
+                      border: "1px dashed #cbd5e1",
+                      color: "#64748b",
+                      fontSize: "13px"
+                    }}>
+                      No email notifications sent yet. Automatic emails will appear here whenever a transaction is recorded.
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      {getEmailLogs().slice(0, 10).map((log) => (
+                        <div
+                          key={log.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "12px 16px",
+                            background: "#ffffff",
+                            border: "1px solid #e2e8f0",
+                            borderRadius: "8px",
+                            fontSize: "12px",
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: "700", color: "#0f172a", marginBottom: "2px" }}>
+                              {log.recipientName} &lt;{log.recipientEmail}&gt;
+                            </div>
+                            <div style={{ color: "#64748b", fontSize: "11px" }}>
+                              {log.subject} • {new Date(log.timestamp).toLocaleString()}
+                            </div>
+                          </div>
+
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span style={{
+                              display: "inline-block",
+                              padding: "2px 8px",
+                              borderRadius: "12px",
+                              fontSize: "11px",
+                              fontWeight: "700",
+                              backgroundColor: log.status === "Delivered" ? "#dcfce7" : "#fee2e2",
+                              color: log.status === "Delivered" ? "#166534" : "#991b1b",
+                            }}>
+                              {log.status === "Delivered" ? "✓ Delivered" : "⚠ Failed"}
+                            </span>
+
+                            {onPreviewEmail && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onPreviewEmail(log)}
+                              >
+                                Preview
+                              </Button>
+                            )}
+
+                            {log.status === "Failed" && (
+                              <Button
+                                type="button"
+                                variant="primary"
+                                size="sm"
+                                onClick={() => {
+                                  const res = resendEmailNotification(log.id, shopInfo);
+                                  if (res.success) {
+                                    toast.success("Email Resent Successfully!");
+                                  } else {
+                                    toast.error(res.reason || "Failed to resend");
+                                  }
+                                }}
+                              >
+                                Retry
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

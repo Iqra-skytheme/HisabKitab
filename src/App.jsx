@@ -26,6 +26,12 @@ import {
   isReceiptNumberUnique,
 } from "./utils/receiptUtils";
 import { exportTransactionReceiptPDF } from "./services/exportService";
+import {
+  validateEmail,
+  sendTransactionEmailNotification,
+  generateTransactionEmailHtml,
+  generateTransactionEmailText,
+} from "./services/emailService";
 
 
 export default function App() {
@@ -103,11 +109,29 @@ export default function App() {
   const [custModalOpen, setCustModalOpen] = useState(false);
   const [custForm, setCustForm] = useState({
     name: "",
+    email: "",
     countryCode: "+92",
     phone: "",
     address: "",
     openingBalance: "",
+    isWhatsAppRegistered: true,
   });
+
+  // Modal State: Edit Customer
+  const [editCustModalOpen, setEditCustModalOpen] = useState(false);
+  const [editCustForm, setEditCustForm] = useState({
+    id: "",
+    name: "",
+    email: "",
+    countryCode: "+92",
+    phone: "",
+    address: "",
+    isWhatsAppRegistered: true,
+  });
+
+  // Modal State: Email Notification Preview
+  const [emailPreviewModalOpen, setEmailPreviewModalOpen] = useState(false);
+  const [previewEmailData, setPreviewEmailData] = useState(null);
 
   const [activeTxnFilter, setActiveTxnFilter] = useState("all");
   const [activeCustFilter, setActiveCustFilter] = useState("all");
@@ -202,12 +226,15 @@ export default function App() {
 
     const targetCustomer = customers.find((c) => c.id === txnForm.customerId);
     const customerName = targetCustomer ? targetCustomer.name : "Customer";
+    const customerEmail = targetCustomer ? targetCustomer.email : "";
     const amountNum = Number(txnForm.amount);
 
     const newTxn = {
+      // eslint-disable-next-line react-hooks/purity
       id: `tx-${Date.now()}`,
       customerId: txnForm.customerId,
       customerName,
+      customerEmail,
       type: txnForm.type,
       amount: amountNum,
       date: txnForm.date || new Date().toISOString().split("T")[0],
@@ -216,6 +243,14 @@ export default function App() {
       billNumber: candidateBillNumber,
     };
 
+    // Calculate updated balance
+    const isUdhaar = txnForm.type === "Udhaar";
+    const prevUdhaar = targetCustomer?.totalUdhaar || 0;
+    const prevJama = targetCustomer?.totalJama || 0;
+    const newUdhaar = prevUdhaar + (isUdhaar ? amountNum : 0);
+    const newJama = prevJama + (!isUdhaar ? amountNum : 0);
+    const newBalance = newUdhaar - newJama;
+
     // Update transactions list
     setTransactions((prev) => [newTxn, ...prev]);
 
@@ -223,10 +258,6 @@ export default function App() {
     setCustomers((prev) =>
       prev.map((cust) => {
         if (cust.id === txnForm.customerId) {
-          const isUdhaar = txnForm.type === "Udhaar";
-          const newUdhaar = (cust.totalUdhaar || 0) + (isUdhaar ? amountNum : 0);
-          const newJama = (cust.totalJama || 0) + (!isUdhaar ? amountNum : 0);
-          const newBalance = newUdhaar - newJama;
           return {
             ...cust,
             totalUdhaar: newUdhaar,
@@ -242,9 +273,22 @@ export default function App() {
 
     setTxnModalOpen(false);
 
+    // Immediate Debit/Credit Email Notification Dispatch
+    const emailResult = sendTransactionEmailNotification({
+      transaction: newTxn,
+      customer: targetCustomer,
+      shopInfo,
+      balanceInfo: {
+        previousBalance: targetCustomer?.balance || 0,
+        newBalance: newBalance,
+        type: txnForm.type,
+        amount: amountNum,
+      },
+    });
+
     if (txnForm.type === "Udhaar") {
       toast.warning(`Udhaar Recorded: ${shopInfo.currency} ${amountNum.toLocaleString()}`, {
-        description: `Debited to ${customerName} (Unique Receipt: ${newTxn.billNumber})`,
+        description: `Debited to ${customerName} (Receipt: ${newTxn.billNumber})`,
         action: {
           label: "Print Receipt",
           onClick: () => exportTransactionReceiptPDF(newTxn, targetCustomer, shopInfo),
@@ -252,11 +296,26 @@ export default function App() {
       });
     } else {
       toast.success(`Jama Payment: ${shopInfo.currency} ${amountNum.toLocaleString()}`, {
-        description: `Received from ${customerName} (Unique Receipt: ${newTxn.billNumber})`,
+        description: `Received from ${customerName} (Receipt: ${newTxn.billNumber})`,
         action: {
           label: "Print Receipt",
           onClick: () => exportTransactionReceiptPDF(newTxn, targetCustomer, shopInfo),
         },
+      });
+    }
+
+    // Separate email delivery status toast with preview action
+    if (emailResult.success) {
+      toast.info("📧 Confirmation Email Sent!", {
+        description: `Delivered to ${targetCustomer?.email || "customer email"} with updated balance.`,
+        action: {
+          label: "View Email",
+          onClick: () => handleOpenEmailPreview(emailResult.log),
+        },
+      });
+    } else {
+      toast.warning("Email Delivery Alert", {
+        description: `Transaction saved, but email could not be delivered to ${targetCustomer?.email || "customer"}: ${emailResult.reason}`,
       });
     }
   };
@@ -265,15 +324,17 @@ export default function App() {
   const handleOpenAddCustomer = () => {
     setCustForm({
       name: "",
+      email: "",
       countryCode: shopInfo?.countryCode || "+92",
       phone: "",
       address: "",
       openingBalance: "",
+      isWhatsAppRegistered: true,
     });
     setCustModalOpen(true);
   };
 
-  // Submit New Customer
+  // Submit New Customer with Mandatory Email Validation
   const handleSaveCustomer = (e) => {
     e.preventDefault();
     const cleanName = custForm.name.trim();
@@ -290,18 +351,33 @@ export default function App() {
       return;
     }
 
+    // Mandatory Email Validation
+    const emailValidation = validateEmail(custForm.email);
+    if (!emailValidation.valid) {
+      toast.error("Valid Email Address Required", {
+        description: emailValidation.error || "Email address is required to register a customer account.",
+      });
+      return;
+    }
+    const cleanEmail = emailValidation.email;
+
     if (!custForm.phone.trim()) {
       toast.error("Phone number is required.");
       return;
     }
 
+    const cleanPhone = custForm.phone.trim();
+    const countryPrefix = custForm.countryCode || "+92";
+    const normalizedLocal = cleanPhone.startsWith("0") ? cleanPhone.slice(1) : cleanPhone;
+    const fullPhone = `${countryPrefix} ${normalizedLocal}`;
+
     const newId = `c${Date.now()}`;
     const openBal = Number(custForm.openingBalance || 0);
-    const fullPhone = `${custForm.countryCode || "+92"} ${custForm.phone.trim()}`;
 
     const newCustomer = {
       id: newId,
       name: cleanName,
+      email: cleanEmail,
       phone: fullPhone,
       address: custForm.address.trim() || "Local Customer",
       totalUdhaar: openBal > 0 ? openBal : 0,
@@ -309,17 +385,19 @@ export default function App() {
       balance: openBal,
       status: openBal > 0 ? "Active" : "Clear",
       lastTransactionDate: new Date().toISOString().split("T")[0],
+      isWhatsAppRegistered: custForm.isWhatsAppRegistered ?? true,
     };
 
     setCustomers((prev) => [newCustomer, ...prev]);
 
-    // If opening balance > 0, create an initial transaction entry with a guaranteed unique receipt number
+    // If opening balance > 0, create an initial transaction entry with unique receipt
     if (openBal > 0) {
       const openReceiptNo = generateUniqueReceiptNumber(transactions, "Opening");
       const initialTxn = {
         id: `tx-${Date.now()}`,
         customerId: newId,
         customerName: newCustomer.name,
+        customerEmail: cleanEmail,
         type: "Udhaar",
         amount: openBal,
         date: new Date().toISOString().split("T")[0],
@@ -328,12 +406,168 @@ export default function App() {
         billNumber: openReceiptNo,
       };
       setTransactions((prev) => [initialTxn, ...prev]);
+
+      // Automatically dispatch confirmation email for opening balance
+      sendTransactionEmailNotification({
+        transaction: initialTxn,
+        customer: newCustomer,
+        shopInfo,
+        balanceInfo: {
+          previousBalance: 0,
+          newBalance: openBal,
+          type: "Udhaar",
+          amount: openBal,
+        },
+      });
     }
 
     setCustModalOpen(false);
     toast.success(`Customer Added: ${newCustomer.name}`, {
-      description: `Khata account created with ${shopInfo.currency} ${openBal.toLocaleString()} initial balance.`,
+      description: `Khata account created with email: ${cleanEmail}.`,
     });
+  };
+
+  // Open Edit Customer Modal
+  const handleOpenEditCustomer = (customer) => {
+    if (!customer) return;
+    let countryCode = shopInfo?.countryCode || "+92";
+    let localPhone = customer.phone || "";
+    const match = customer.phone?.match(/^(\+\d+)\s*(.*)$/);
+    if (match) {
+      countryCode = match[1];
+      localPhone = match[2];
+    }
+    setEditCustForm({
+      id: customer.id,
+      name: customer.name || "",
+      email: customer.email || "",
+      countryCode,
+      phone: localPhone,
+      address: customer.address || "",
+      isWhatsAppRegistered: customer.isWhatsAppRegistered ?? true,
+    });
+    setEditCustModalOpen(true);
+  };
+
+  // Save Edited Customer with Mandatory Email Validation
+  const handleSaveEditCustomer = (e) => {
+    e.preventDefault();
+    const cleanName = editCustForm.name.trim();
+    if (!cleanName) {
+      toast.error("Customer name is required.");
+      return;
+    }
+    if (!/^[a-zA-Z\s]+$/.test(cleanName)) {
+      toast.error("Invalid Customer Name", {
+        description: "Customer name must only contain alphabetic letters and spaces.",
+      });
+      return;
+    }
+
+    // Mandatory Email Validation
+    const emailValidation = validateEmail(editCustForm.email);
+    if (!emailValidation.valid) {
+      toast.error("Valid Email Address Required", {
+        description: emailValidation.error || "Email address is mandatory for customer accounts.",
+      });
+      return;
+    }
+    const cleanEmail = emailValidation.email;
+
+    if (!editCustForm.phone.trim()) {
+      toast.error("Phone number is required.");
+      return;
+    }
+    const cleanPhone = editCustForm.phone.trim();
+    const countryPrefix = editCustForm.countryCode || "+92";
+    const normalizedLocal = cleanPhone.startsWith("0") ? cleanPhone.slice(1) : cleanPhone;
+    const fullPhone = `${countryPrefix} ${normalizedLocal}`;
+
+    setCustomers((prev) =>
+      prev.map((c) =>
+        c.id === editCustForm.id
+          ? {
+              ...c,
+              name: cleanName,
+              email: cleanEmail,
+              phone: fullPhone,
+              address: editCustForm.address.trim() || "Local Customer",
+              isWhatsAppRegistered: editCustForm.isWhatsAppRegistered,
+            }
+          : c
+      )
+    );
+
+    // Sync updated customer name and email to existing transactions
+    setTransactions((prev) =>
+      prev.map((t) =>
+        t.customerId === editCustForm.id
+          ? { ...t, customerName: cleanName, customerEmail: cleanEmail }
+          : t
+      )
+    );
+
+    setEditCustModalOpen(false);
+    toast.success(`Customer Updated: ${cleanName}`, {
+      description: `Email and contact profile updated successfully.`,
+    });
+  };
+
+  // Open Email Notification Preview
+  const handleOpenEmailPreview = (emailLog) => {
+    if (!emailLog) return;
+    setPreviewEmailData(emailLog);
+    setEmailPreviewModalOpen(true);
+  };
+
+  // Preview an email for any transaction on demand
+  const handlePreviewTransactionEmail = (txn, cust = null) => {
+    const targetCust = cust || customers.find((c) => c.id === txn.customerId) || {
+      name: txn.customerName,
+      email: txn.customerEmail,
+      balance: 0,
+    };
+    const html = generateTransactionEmailHtml({
+      transaction: txn,
+      customer: targetCust,
+      shopInfo,
+      balanceInfo: {
+        previousBalance: targetCust.balance || 0,
+        newBalance: targetCust.balance || 0,
+        type: txn.type,
+        amount: txn.amount,
+      },
+    });
+    const text = generateTransactionEmailText({
+      transaction: txn,
+      customer: targetCust,
+      shopInfo,
+      balanceInfo: {
+        previousBalance: targetCust.balance || 0,
+        newBalance: targetCust.balance || 0,
+        type: txn.type,
+        amount: txn.amount,
+      },
+    });
+    const isUdhaar = txn.type === "Udhaar";
+    setPreviewEmailData({
+      id: `view-${Date.now()}`,
+      recipientName: targetCust.name,
+      recipientEmail: targetCust.email || "No email on record",
+      subject: `[${shopInfo.name}] ${isUdhaar ? "Debit Order Confirmation" : "Payment Credit Receipt"} - #${txn.billNumber || "INV"}`,
+      status: targetCust.email ? "Delivered" : "Failed",
+      error: targetCust.email ? null : "Customer has no registered email address.",
+      htmlContent: html,
+      textContent: text,
+    });
+    setEmailPreviewModalOpen(true);
+  };
+
+  // Update existing customer record (e.g. toggling WhatsApp status)
+  const handleUpdateCustomer = (customerId, updates) => {
+    setCustomers((prev) =>
+      prev.map((c) => (c.id === customerId ? { ...c, ...updates } : c))
+    );
   };
 
   const handleLogin = (loginData) => {
@@ -430,6 +664,8 @@ export default function App() {
             onOpenAddTransaction={handleOpenAddTransaction}
             onOpenAddCustomer={handleOpenAddCustomer}
             currency={shopInfo.currency}
+            shopInfo={shopInfo}
+            onUpdateCustomer={handleUpdateCustomer}
           />
         )}
 
@@ -439,8 +675,11 @@ export default function App() {
             onSelectCustomer={(id) => handleNavigate("customer-details", id)}
             onOpenAddCustomer={handleOpenAddCustomer}
             onOpenAddTransaction={handleOpenAddTransaction}
+            onOpenEditCustomer={handleOpenEditCustomer}
             currency={shopInfo.currency}
             initialStatusFilter={activeCustFilter}
+            shopInfo={shopInfo}
+            onUpdateCustomer={handleUpdateCustomer}
           />
         )}
 
@@ -450,8 +689,11 @@ export default function App() {
             transactions={transactions}
             onBack={() => handleNavigate("customers")}
             onOpenAddTransaction={handleOpenAddTransaction}
+            onOpenEditCustomer={handleOpenEditCustomer}
+            onPreviewEmail={handlePreviewTransactionEmail}
             currency={shopInfo.currency}
             shopInfo={shopInfo}
+            onUpdateCustomer={handleUpdateCustomer}
           />
         )}
 
@@ -462,6 +704,7 @@ export default function App() {
             shopInfo={shopInfo}
             onSelectCustomer={(id) => handleNavigate("customer-details", id)}
             onOpenAddTransaction={handleOpenAddTransaction}
+            onPreviewEmail={handlePreviewTransactionEmail}
             currency={shopInfo.currency}
             initialTypeFilter={activeTxnFilter}
           />
@@ -481,6 +724,7 @@ export default function App() {
           <Settings
             shopInfo={shopInfo}
             onUpdateShopInfo={handleUpdateShopInfo}
+            onPreviewEmail={handleOpenEmailPreview}
           />
         )}
       </DashboardLayout>
@@ -717,29 +961,49 @@ export default function App() {
         title="Add New Customer Khata"
       >
         <form onSubmit={handleSaveCustomer} className="modal-form">
-          <div className="form-group">
-            <label className="form-label" htmlFor="cust-name">
-              Full Customer Name (Letters Only) *
-            </label>
-            <input
-              id="cust-name"
-              type="text"
-              className="form-input"
-              placeholder="e.g. Tariq Mehmood"
-              value={custForm.name}
-              onChange={(e) => {
-                const rawVal = e.target.value;
-                const alphabetsOnly = rawVal.replace(/[^a-zA-Z\s]/g, "");
-                setCustForm((prev) => ({ ...prev, name: alphabetsOnly }));
-                if (rawVal !== alphabetsOnly) {
-                  toast.warning("Numbers Not Allowed", {
-                    description: "Customer name can only contain alphabetic letters and spaces.",
-                  });
+          <div className="form-row-2">
+            <div className="form-group">
+              <label className="form-label" htmlFor="cust-name">
+                Full Customer Name (Letters Only) *
+              </label>
+              <input
+                id="cust-name"
+                type="text"
+                className="form-input"
+                placeholder="e.g. Tariq Mehmood"
+                value={custForm.name}
+                onChange={(e) => {
+                  const rawVal = e.target.value;
+                  const alphabetsOnly = rawVal.replace(/[^a-zA-Z\s]/g, "");
+                  setCustForm((prev) => ({ ...prev, name: alphabetsOnly }));
+                  if (rawVal !== alphabetsOnly) {
+                    toast.warning("Numbers Not Allowed", {
+                      description: "Customer name can only contain alphabetic letters and spaces.",
+                    });
+                  }
+                }}
+                required
+              />
+              <span className="field-hint">Numbers and digits are not permitted.</span>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="cust-email">
+                Email Address (Mandatory) *
+              </label>
+              <input
+                id="cust-email"
+                type="email"
+                className="form-input"
+                placeholder="e.g. tariq.mehmood@gmail.com"
+                value={custForm.email}
+                onChange={(e) =>
+                  setCustForm((prev) => ({ ...prev, email: e.target.value }))
                 }
-              }}
-              required
-            />
-            <span className="field-hint">Numbers and digits are not permitted.</span>
+                required
+              />
+              <span className="field-hint">Required for automatic debit/credit confirmations.</span>
+            </div>
           </div>
 
           <div className="form-row-2">
@@ -814,6 +1078,20 @@ export default function App() {
             />
           </div>
 
+          <div className="form-group">
+            <label className="checkbox-toggle-label" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px", fontWeight: "600", color: "var(--text-main)" }}>
+              <input
+                type="checkbox"
+                checked={custForm.isWhatsAppRegistered ?? true}
+                onChange={(e) =>
+                  setCustForm((prev) => ({ ...prev, isWhatsAppRegistered: e.target.checked }))
+                }
+                style={{ width: "16px", height: "16px", accentColor: "#25D366" }}
+              />
+              <span>Registered on WhatsApp (enable 1-click reminders & digital receipts)</span>
+            </label>
+          </div>
+
           <div className="modal-actions-right">
             <Button
               type="button"
@@ -827,6 +1105,219 @@ export default function App() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Edit Customer Modal */}
+      <Modal
+        isOpen={editCustModalOpen}
+        onClose={() => setEditCustModalOpen(false)}
+        title="Edit Customer Profile & Email"
+      >
+        <form onSubmit={handleSaveEditCustomer} className="modal-form">
+          <div className="form-row-2">
+            <div className="form-group">
+              <label className="form-label" htmlFor="edit-cust-name">
+                Full Customer Name (Letters Only) *
+              </label>
+              <input
+                id="edit-cust-name"
+                type="text"
+                className="form-input"
+                placeholder="e.g. Tariq Mehmood"
+                value={editCustForm.name}
+                onChange={(e) => {
+                  const rawVal = e.target.value;
+                  const alphabetsOnly = rawVal.replace(/[^a-zA-Z\s]/g, "");
+                  setEditCustForm((prev) => ({ ...prev, name: alphabetsOnly }));
+                  if (rawVal !== alphabetsOnly) {
+                    toast.warning("Numbers Not Allowed", {
+                      description: "Customer name can only contain alphabetic letters and spaces.",
+                    });
+                  }
+                }}
+                required
+              />
+              <span className="field-hint">Numbers and digits are not permitted.</span>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="edit-cust-email">
+                Email Address (Mandatory) *
+              </label>
+              <input
+                id="edit-cust-email"
+                type="email"
+                className="form-input"
+                placeholder="e.g. tariq.mehmood@gmail.com"
+                value={editCustForm.email}
+                onChange={(e) =>
+                  setEditCustForm((prev) => ({ ...prev, email: e.target.value }))
+                }
+                required
+              />
+              <span className="field-hint">Required for automatic debit/credit confirmations.</span>
+            </div>
+          </div>
+
+          <div className="form-row-2">
+            <div className="form-group">
+              <label className="form-label" htmlFor="edit-cust-phone">
+                Country Code & Phone Number *
+              </label>
+              <div className="phone-input-group">
+                <select
+                  className="country-code-select"
+                  value={editCustForm.countryCode || "+92"}
+                  onChange={(e) =>
+                    setEditCustForm((prev) => ({ ...prev, countryCode: e.target.value }))
+                  }
+                  aria-label="Country Code"
+                >
+                  {COUNTRY_CODES.map((item) => (
+                    <option key={item.code} value={item.code}>
+                      {item.code} ({item.country})
+                    </option>
+                  ))}
+                </select>
+                <input
+                  id="edit-cust-phone"
+                  type="tel"
+                  className="form-input phone-number-input"
+                  placeholder="300-1234567"
+                  value={editCustForm.phone}
+                  onChange={(e) =>
+                    setEditCustForm((prev) => ({ ...prev, phone: e.target.value }))
+                  }
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="edit-cust-address">
+                Shop / Home Address
+              </label>
+              <input
+                id="edit-cust-address"
+                type="text"
+                className="form-input"
+                placeholder="e.g. Street 4, Sector G-8, Islamabad"
+                value={editCustForm.address}
+                onChange={(e) =>
+                  setEditCustForm((prev) => ({ ...prev, address: e.target.value }))
+                }
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="checkbox-toggle-label" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px", fontWeight: "600", color: "var(--text-main)" }}>
+              <input
+                type="checkbox"
+                checked={editCustForm.isWhatsAppRegistered ?? true}
+                onChange={(e) =>
+                  setEditCustForm((prev) => ({ ...prev, isWhatsAppRegistered: e.target.checked }))
+                }
+                style={{ width: "16px", height: "16px", accentColor: "#25D366" }}
+              />
+              <span>Registered on WhatsApp (enable 1-click reminders & digital receipts)</span>
+            </label>
+          </div>
+
+          <div className="modal-actions-right">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditCustModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary">
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Email Notification Preview Modal */}
+      <Modal
+        isOpen={emailPreviewModalOpen}
+        onClose={() => setEmailPreviewModalOpen(false)}
+        title="📧 Official Transaction Email Confirmation"
+      >
+        {previewEmailData && (
+          <div className="email-preview-container" style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "12px 16px", fontSize: "13px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                <span style={{ color: "#64748b" }}>To:</span>
+                <span style={{ fontWeight: "700", color: "#0f172a" }}>{previewEmailData.recipientName} &lt;{previewEmailData.recipientEmail}&gt;</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                <span style={{ color: "#64748b" }}>Subject:</span>
+                <span style={{ fontWeight: "600", color: "#2563eb" }}>{previewEmailData.subject}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ color: "#64748b" }}>Delivery Status:</span>
+                <span style={{
+                  display: "inline-block",
+                  padding: "2px 8px",
+                  borderRadius: "12px",
+                  fontSize: "11px",
+                  fontWeight: "700",
+                  backgroundColor: previewEmailData.status === "Delivered" ? "#dcfce7" : "#fee2e2",
+                  color: previewEmailData.status === "Delivered" ? "#166534" : "#991b1b",
+                }}>
+                  {previewEmailData.status === "Delivered" ? "✓ Sent & Delivered" : "⚠ Delivery Failed"}
+                </span>
+              </div>
+              {previewEmailData.error && (
+                <div style={{ marginTop: "8px", fontSize: "12px", color: "#b91c1c", background: "#fef2f2", padding: "6px 10px", borderRadius: "4px" }}>
+                  Delivery Note: {previewEmailData.error}
+                </div>
+              )}
+            </div>
+
+            <div style={{
+              border: "1px solid #cbd5e1",
+              borderRadius: "8px",
+              overflow: "hidden",
+              height: "440px",
+              background: "#ffffff",
+            }}>
+              {previewEmailData.htmlContent ? (
+                <iframe
+                  title="Email HTML Preview"
+                  srcDoc={previewEmailData.htmlContent}
+                  style={{ width: "100%", height: "100%", border: "none" }}
+                />
+              ) : (
+                <pre style={{ padding: "16px", fontSize: "12px", whiteSpace: "pre-wrap", fontFamily: "monospace" }}>
+                  {previewEmailData.textContent || "No email content available."}
+                </pre>
+              )}
+            </div>
+
+            <div className="modal-actions-right">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEmailPreviewModalOpen(false)}
+              >
+                Close
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => {
+                  navigator.clipboard.writeText(previewEmailData.textContent || "");
+                  toast.success("Email Text Copied!", { description: "Copied email confirmation to clipboard." });
+                }}
+              >
+                Copy Email Text
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </>
   );

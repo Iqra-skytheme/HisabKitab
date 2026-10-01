@@ -1,6 +1,7 @@
 import StatCard from "../components/StatCard";
 import Table from "../components/Table";
 import Button from "../components/Button";
+import { sendWhatsAppReminder } from "../services/whatsappService";
 
 export default function Dashboard({
   customers = [],
@@ -9,6 +10,7 @@ export default function Dashboard({
   onOpenAddTransaction,
   onOpenAddCustomer,
   currency = "Rs.",
+  shopInfo = {},
 }) {
   // Compute totals
   const totalUdhaar = transactions
@@ -264,17 +266,67 @@ export default function Dashboard({
                     </div>
                     <div>
                       <h4 className="debtor-name">{customer.name}</h4>
-                      <p className="debtor-phone">{customer.phone}</p>
+                      <button
+                        type="button"
+                        className="debtor-phone-btn"
+                        title={`Click to send WhatsApp reminder to ${customer.name} (${customer.phone})`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          sendWhatsAppReminder({
+                            customer,
+                            balance: customer.balance,
+                            shopInfo,
+                          });
+                        }}
+                      >
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{ display: "inline-block", verticalAlign: "middle", marginRight: "4px" }}
+                        >
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                        </svg>
+                        <span>{customer.phone}</span>
+                      </button>
                     </div>
                   </div>
-                  <div className="debtor-right">
-                    <span className="debtor-amount">
-                      {currency} {(customer.balance || 0).toLocaleString()}
-                    </span>
-                    <span className="debtor-action-hint">View Ledger →</span>
+                    <div className="debtor-right">
+                      <span className="debtor-amount">
+                        {currency} {(customer.balance || 0).toLocaleString()}
+                      </span>
+                      <div className="debtor-actions-wrap" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          className="btn-quick-wa-reminder"
+                          title={`Send WhatsApp reminder to ${customer.name}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            sendWhatsAppReminder({
+                              customer,
+                              balance: customer.balance,
+                              shopInfo,
+                            });
+                          }}
+                        >
+                          💬 Reminder
+                        </button>
+                        <span
+                          className="debtor-action-hint"
+                          onClick={() => onNavigate("customer-details", customer.id)}
+                        >
+                          View Ledger →
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              )}
             </div>
           )}
         </div>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import Table from "../components/Table";
 import Button from "../components/Button";
@@ -10,24 +10,27 @@ export default function Transactions({
   shopInfo = {},
   onSelectCustomer,
   onOpenAddTransaction,
+  onPreviewEmail,
   currency = "Rs.",
   initialTypeFilter = "all",
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState(initialTypeFilter); // 'all', 'Udhaar', 'Jama'
+  const [prevInitialTypeFilter, setPrevInitialTypeFilter] = useState(initialTypeFilter);
   const [methodFilter, setMethodFilter] = useState("all");
 
-  useEffect(() => {
-    if (initialTypeFilter) {
-      setTypeFilter(initialTypeFilter);
-    }
-  }, [initialTypeFilter]);
+  // Synchronize initial filter if changed externally
+  if (initialTypeFilter !== prevInitialTypeFilter) {
+    setPrevInitialTypeFilter(initialTypeFilter);
+    setTypeFilter(initialTypeFilter);
+  }
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((txn) => {
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         txn.customerName.toLowerCase().includes(q) ||
+        (txn.customerEmail && txn.customerEmail.toLowerCase().includes(q)) ||
         (txn.description && txn.description.toLowerCase().includes(q)) ||
         (txn.billNumber && txn.billNumber.toLowerCase().includes(q));
 
@@ -61,18 +64,29 @@ export default function Transactions({
     {
       header: "Customer",
       key: "customerName",
-      render: (row) => (
-        <button
-          type="button"
-          className="customer-link-btn"
-          onClick={() => onSelectCustomer && onSelectCustomer(row.customerId)}
-        >
-          <span className="customer-avatar-mini">
-            {row.customerName ? row.customerName.charAt(0) : "C"}
-          </span>
-          <span className="customer-name-bold">{row.customerName}</span>
-        </button>
-      ),
+      render: (row) => {
+        const targetCust = customers.find((c) => c.id === row.customerId);
+        const email = row.customerEmail || targetCust?.email;
+        return (
+          <button
+            type="button"
+            className="customer-link-btn"
+            onClick={() => onSelectCustomer && onSelectCustomer(row.customerId)}
+          >
+            <span className="customer-avatar-mini">
+              {row.customerName ? row.customerName.charAt(0) : "C"}
+            </span>
+            <div style={{ textAlign: "left" }}>
+              <span className="customer-name-bold">{row.customerName}</span>
+              {email && (
+                <div style={{ fontSize: "11px", color: "var(--primary)", fontWeight: "500", marginTop: "1px" }}>
+                  ✉ {email}
+                </div>
+              )}
+            </div>
+          </button>
+        );
+      },
     },
     {
       header: "Type",
@@ -121,45 +135,78 @@ export default function Transactions({
       ),
     },
     {
-      header: "Receipt",
+      header: "Slip & Email",
       key: "receiptAction",
       align: "center",
-      width: "90px",
+      width: "140px",
       render: (row) => {
-        const targetCust = customers.find((c) => c.id === row.customerId) || { name: row.customerName };
+        const targetCust = customers.find((c) => c.id === row.customerId) || { name: row.customerName, email: row.customerEmail };
         return (
-          <button
-            type="button"
-            className="btn-print-receipt"
-            title="Download unique receipt slip PDF"
-            onClick={(e) => {
-              e.stopPropagation();
-              exportTransactionReceiptPDF(row, targetCust, shopInfo);
-              toast.success(`Receipt PDF Downloaded: ${row.billNumber || "Slip"}`, {
-                description: `Unique receipt slip downloaded automatically for ${row.customerName}.`,
-              });
-            }}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "4px",
-              padding: "4px 8px",
-              background: "#f8fafc",
-              border: "1px solid #cbd5e1",
-              borderRadius: "6px",
-              fontSize: "12px",
-              fontWeight: "600",
-              color: "#334155",
-              cursor: "pointer",
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6 9 6 2 18 2 18 9"></polyline>
-              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-              <rect x="6" y="14" width="12" height="8"></rect>
-            </svg>
-            Print
-          </button>
+          <div style={{ display: "inline-flex", gap: "6px", alignItems: "center" }}>
+            <button
+              type="button"
+              className="btn-print-receipt"
+              title="Download unique receipt slip PDF"
+              onClick={(e) => {
+                e.stopPropagation();
+                exportTransactionReceiptPDF(row, targetCust, shopInfo);
+                toast.success(`Receipt PDF Downloaded: ${row.billNumber || "Slip"}`, {
+                  description: `Unique receipt slip downloaded automatically for ${row.customerName}.`,
+                });
+              }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "4px 7px",
+                background: "#f8fafc",
+                border: "1px solid #cbd5e1",
+                borderRadius: "6px",
+                fontSize: "11px",
+                fontWeight: "600",
+                color: "#334155",
+                cursor: "pointer",
+              }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+              </svg>
+              Print
+            </button>
+
+            <button
+              type="button"
+              className="btn-print-receipt"
+              title="View sent email notification & confirmation"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onPreviewEmail) {
+                  onPreviewEmail(row, targetCust);
+                }
+              }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "4px 7px",
+                background: "#eff6ff",
+                border: "1px solid #bfdbfe",
+                borderRadius: "6px",
+                fontSize: "11px",
+                fontWeight: "600",
+                color: "#1d4ed8",
+                cursor: "pointer",
+              }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+              Email
+            </button>
+          </div>
         );
       },
     },

@@ -109,7 +109,7 @@ export async function verifyPassword(enteredPassword, storedSalt, storedHash) {
  */
 export function normalizeIdentifier(val) {
   if (!val) return "";
-  return val.replace(/[\s\-\+\(\)]/g, "").toLowerCase();
+  return val.replace(/[\s\-+()]/g, "").toLowerCase();
 }
 
 /**
@@ -164,7 +164,9 @@ export function getOwnerProfile() {
     const raw = localStorage.getItem(CREDENTIALS_STORAGE_KEY);
     if (!raw) return null;
     const creds = JSON.parse(raw);
-    const { passwordHash, salt, ...safeProfile } = creds;
+    const safeProfile = { ...creds };
+    delete safeProfile.passwordHash;
+    delete safeProfile.salt;
     return safeProfile;
   } catch {
     return null;
@@ -188,7 +190,7 @@ export async function authenticateOwner(identifier, password, rememberMe = true)
     } else {
       creds = JSON.parse(raw);
     }
-  } catch (err) {
+  } catch {
     return { success: false, message: "Storage error occurred during login." };
   }
 

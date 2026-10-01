@@ -2,6 +2,7 @@ import { toast } from "sonner";
 import Table from "../components/Table";
 import Button from "../components/Button";
 import { exportCustomerPDF, exportCustomerExcel, exportTransactionReceiptPDF } from "../services/exportService";
+import { sendWhatsAppReminder } from "../services/whatsappService";
 
 function computeCustomerStatement(txns) {
   const sorted = [...txns].sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -24,6 +25,8 @@ export default function CustomerDetails({
   transactions = [],
   onBack,
   onOpenAddTransaction,
+  onOpenEditCustomer,
+  onPreviewEmail,
   currency = "Rs.",
   shopInfo = {},
 }) {
@@ -57,12 +60,10 @@ export default function CustomerDetails({
   const netBalance = totalUdhaar - totalJama;
 
   const handleShareWhatsApp = () => {
-    const text = encodeURIComponent(
-      `Assalam-o-Alaikum ${customer.name},\nThis is a friendly reminder from Bismillah General Store.\nYour pending khata balance is ${currency} ${netBalance.toLocaleString()}.\nPlease clear at your earliest convenience. Shukriya!`
-    );
-    window.open(`https://wa.me/?text=${text}`, "_blank");
-    toast.success("WhatsApp Reminder Opened", {
-      description: `Friendly payment reminder generated for ${customer.name} (${currency} ${netBalance.toLocaleString()})`,
+    sendWhatsAppReminder({
+      customer,
+      balance: netBalance,
+      shopInfo,
     });
   };
 
@@ -120,42 +121,70 @@ export default function CustomerDetails({
       ),
     },
     {
-      header: "Receipt",
+      header: "Receipt & Email",
       key: "receiptAction",
       align: "center",
-      width: "85px",
+      width: "140px",
       render: (row) => (
-        <button
-          type="button"
-          className="btn-print-receipt"
-          title="Download unique transaction receipt slip PDF"
-          onClick={() => {
-            exportTransactionReceiptPDF(row, customer, shopInfo);
-            toast.success(`Receipt PDF Downloaded: ${row.billNumber || "Slip"}`, {
-              description: `Unique slip downloaded automatically for ${customer.name}.`,
-            });
-          }}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "4px",
-            padding: "4px 8px",
-            background: "#f8fafc",
-            border: "1px solid #cbd5e1",
-            borderRadius: "6px",
-            fontSize: "11px",
-            fontWeight: "600",
-            color: "#475569",
-            cursor: "pointer",
-          }}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="6 9 6 2 18 2 18 9"></polyline>
-            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-            <rect x="6" y="14" width="12" height="8"></rect>
-          </svg>
-          Slip
-        </button>
+        <div style={{ display: "inline-flex", gap: "6px", alignItems: "center" }}>
+          <button
+            type="button"
+            className="btn-print-receipt"
+            title="Download unique transaction receipt slip PDF"
+            onClick={() => {
+              exportTransactionReceiptPDF(row, customer, shopInfo);
+              toast.success(`Receipt PDF Downloaded: ${row.billNumber || "Slip"}`, {
+                description: `Unique slip downloaded automatically for ${customer.name}.`,
+              });
+            }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              padding: "4px 7px",
+              background: "#f8fafc",
+              border: "1px solid #cbd5e1",
+              borderRadius: "6px",
+              fontSize: "11px",
+              fontWeight: "600",
+              color: "#475569",
+              cursor: "pointer",
+            }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 6 2 18 2 18 9"></polyline>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+              <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            Slip
+          </button>
+
+          <button
+            type="button"
+            className="btn-print-receipt"
+            title="View official email notification & confirmation"
+            onClick={() => onPreviewEmail && onPreviewEmail(row, customer)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              padding: "4px 7px",
+              background: "#eff6ff",
+              border: "1px solid #bfdbfe",
+              borderRadius: "6px",
+              fontSize: "11px",
+              fontWeight: "600",
+              color: "#1d4ed8",
+              cursor: "pointer",
+            }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            Email
+          </button>
+        </div>
       ),
     },
   ];
@@ -187,13 +216,34 @@ export default function CustomerDetails({
                   {netBalance > 0 ? "Pending Balance" : "Account Cleared"}
                 </span>
               </div>
-              <p className="profile-contact-line">
-                <span className="contact-item">
+              <div className="profile-contact-line">
+                <button
+                  type="button"
+                  className="contact-item contact-phone-btn"
+                  onClick={handleShareWhatsApp}
+                  title={`Click to send WhatsApp reminder to ${customer.phone}`}
+                >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
                   </svg>
-                  {customer.phone}
-                </span>
+                  <span>{customer.phone}</span>
+                </button>
+
+                {customer.email && (
+                  <a
+                    href={`mailto:${customer.email}`}
+                    className="contact-item contact-phone-btn"
+                    title={`Send Email to ${customer.email}`}
+                    style={{ textDecoration: "none" }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                      <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                    <span>{customer.email}</span>
+                  </a>
+                )}
+
                 {customer.address && (
                   <span className="contact-item">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -203,11 +253,19 @@ export default function CustomerDetails({
                     {customer.address}
                   </span>
                 )}
-              </p>
+              </div>
             </div>
           </div>
 
           <div className="customer-action-buttons">
+            <Button
+              variant="outline"
+              size="md"
+              onClick={() => onOpenEditCustomer && onOpenEditCustomer(customer)}
+              title="Edit customer name, email address, and profile"
+            >
+              ✏ Edit Profile
+            </Button>
             <Button
               variant="danger"
               size="md"

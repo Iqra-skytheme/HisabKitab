@@ -3436,4 +3436,149 @@ button, input, select, textarea {
   border-top: 1px solid var(--border-color);
 }
 
+/* ==========================================================================
+   WhatsApp Integration & Phone Reminder Styles
+   ========================================================================== */
+
+.customer-phone-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm, 6px);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-surface, #ffffff);
+  color: var(--text-main, #1e293b);
+  transition: all var(--transition-fast, 0.15s ease);
+  text-decoration: none;
+  user-select: none;
+}
+
+.customer-phone-btn:hover {
+  background: var(--bg-hover, #f8fafc);
+  border-color: #cbd5e1;
+  color: #0f172a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.customer-phone-btn:active {
+  transform: translateY(0);
+}
+
+.customer-phone-btn svg {
+  color: #64748b;
+  transition: color 0.15s ease;
+}
+
+.customer-phone-btn:hover svg {
+  color: #25D366;
+}
+
+.phone-num-text {
+  letter-spacing: 0.2px;
+}
+
+/* Dashboard Debtor Phone & Quick Reminder */
+.debtor-phone-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted, #64748b);
+  transition: all 0.15s ease;
+}
+
+.debtor-phone-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text-main, #1e293b);
+}
+
+.debtor-phone-btn svg {
+  color: #94a3b8;
+  transition: color 0.15s ease;
+}
+
+.debtor-phone-btn:hover svg {
+  color: #25D366;
+}
+
+.debtor-actions-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-quick-wa-reminder {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #25D366;
+  color: #ffffff;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 3px rgba(37, 211, 102, 0.3);
+}
+
+.btn-quick-wa-reminder:hover {
+  background: #1eb956;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(37, 211, 102, 0.4);
+}
+
+.btn-quick-wa-reminder:active {
+  transform: translateY(0);
+}
+
+/* Customer Details Header Phone Button */
+.contact-phone-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  color: var(--text-main, #1e293b);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.contact-phone-btn:hover {
+  background: var(--bg-hover, #f8fafc);
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.contact-phone-btn svg {
+  color: #64748b;
+  transition: color 0.15s ease;
+}
+
+.contact-phone-btn:hover svg {
+  color: #25D366;
+}
+
+
 
